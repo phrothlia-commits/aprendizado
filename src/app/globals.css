@@ -1,32 +1,54 @@
 @import "tailwindcss";
 
+/* Tokens do redesenho v2 (canvas "Trilha — Redesenho v2"). */
 :root {
-  --fundo: #f7f6f3;
+  --fundo: #f6f5f1;
   --superficie: #ffffff;
-  --superficie-2: #f0eee9;
-  --borda: #e3e0d8;
-  --texto: #1c1b19;
-  --texto-2: #6b675f;
-  --destaque: #1d4ed8;
-  --destaque-texto: #ffffff;
-  --sucesso: #15803d;
-  --alerta: #b45309;
-  --perigo: #b91c1c;
+  --superficie-2: #eeece6;
+  --borda: #e2dfd7;
+  --texto: #1a1916;
+  --texto-2: #5c584f;
+  --texto-3: #8c877c;
+  --ok: oklch(0.5 0.12 150);
+  --alerta: oklch(0.55 0.13 70);
+  --perigo: oklch(0.52 0.16 28);
+  --sombra: 0 1px 2px rgb(26 25 22 / 0.04), 0 8px 24px rgb(26 25 22 / 0.06);
+  --veu: rgb(26 25 22 / 0.32);
+  /* Cor de cada pilar (0 = base física) */
+  --p0: oklch(0.55 0.14 128);
+  --p1: oklch(0.55 0.14 255);
+  --p2: oklch(0.55 0.14 330);
+  --p3: oklch(0.55 0.14 160);
+  --p4: oklch(0.56 0.12 70);
+  --p5: oklch(0.55 0.14 290);
+  --p6: oklch(0.55 0.12 205);
+  --p7: oklch(0.52 0.06 55);
+  --p8: oklch(0.55 0.14 25);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --fundo: #141413;
-    --superficie: #1f1e1c;
-    --superficie-2: #2a2926;
-    --borda: #3a3834;
-    --texto: #ecebe7;
-    --texto-2: #a29e95;
-    --destaque: #7aa2ff;
-    --destaque-texto: #0b1020;
-    --sucesso: #4ade80;
-    --alerta: #fbbf24;
-    --perigo: #f87171;
+    --fundo: #121210;
+    --superficie: #1a1917;
+    --superficie-2: #24231f;
+    --borda: #302e29;
+    --texto: #edebe5;
+    --texto-2: #a39e94;
+    --texto-3: #6f6a61;
+    --ok: oklch(0.72 0.12 150);
+    --alerta: oklch(0.78 0.12 75);
+    --perigo: oklch(0.72 0.14 28);
+    --sombra: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.25);
+    --veu: rgb(0 0 0 / 0.55);
+    --p0: oklch(0.75 0.11 128);
+    --p1: oklch(0.75 0.11 255);
+    --p2: oklch(0.75 0.11 330);
+    --p3: oklch(0.75 0.11 160);
+    --p4: oklch(0.76 0.1 70);
+    --p5: oklch(0.75 0.11 290);
+    --p6: oklch(0.75 0.1 205);
+    --p7: oklch(0.74 0.05 55);
+    --p8: oklch(0.75 0.11 25);
   }
 }
 
@@ -37,12 +59,12 @@
   --color-borda: var(--borda);
   --color-texto: var(--texto);
   --color-texto-2: var(--texto-2);
-  --color-destaque: var(--destaque);
-  --color-destaque-texto: var(--destaque-texto);
-  --color-sucesso: var(--sucesso);
+  --color-texto-3: var(--texto-3);
+  --color-ok: var(--ok);
   --color-alerta: var(--alerta);
   --color-perigo: var(--perigo);
-  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-sans: var(--font-instrument), system-ui, sans-serif;
+  --font-serif: var(--font-newsreader), Georgia, serif;
 }
 
 html {
@@ -55,24 +77,44 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
 @utility cartao-ui {
-  @apply rounded-xl border border-borda bg-superficie p-4;
+  @apply rounded-[20px] border border-borda bg-superficie p-[18px];
+}
+@utility cartao-destaque {
+  @apply rounded-[20px] border border-borda bg-superficie p-[18px] shadow-[var(--sombra)];
 }
 @utility botao {
-  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition active:scale-[0.98] disabled:opacity-50;
+  @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[14px] px-4 text-[15px] font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
 }
 @utility botao-primario {
-  @apply botao bg-destaque text-destaque-texto;
+  @apply botao h-[50px] bg-texto text-fundo;
 }
 @utility botao-secundario {
-  @apply botao border border-borda bg-superficie text-texto;
+  @apply botao h-[50px] border border-borda bg-superficie text-texto;
+}
+@utility botao-leve {
+  @apply botao h-11 bg-superficie-2 text-texto;
 }
 @utility campo {
-  @apply w-full rounded-lg border border-borda bg-superficie px-3 py-2.5 text-base outline-none focus:border-destaque;
+  @apply w-full rounded-xl border border-borda bg-superficie px-3.5 py-3 text-base text-texto outline-none placeholder:text-texto-3 focus:border-texto;
 }
 @utility rotulo {
-  @apply mb-1 block text-xs font-medium uppercase tracking-wide text-texto-2;
+  @apply block text-xs font-semibold tracking-[0.08em] text-texto-2 uppercase;
 }
 @utility titulo-pagina {
-  @apply text-2xl font-semibold tracking-tight;
+  @apply font-serif text-[32px] leading-[1.1] font-medium tracking-[-0.015em];
+}
+@utility titulo-cartao {
+  @apply font-serif text-[26px] leading-[1.15] font-medium tracking-[-0.01em];
+}
+@utility chip {
+  @apply inline-flex h-[26px] items-center gap-1.5 rounded-full bg-superficie-2 px-2.5 text-xs font-semibold;
+}
+@utility num {
+  font-variant-numeric: tabular-nums;
 }
