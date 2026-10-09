@@ -1,0 +1,56 @@
+{
+  "numero": 1,
+  "nivel": "fundamentos",
+  "data_inicio": "2026-10-01",
+  "data_fim": "2028-09-30",
+  "trimestres": [
+    {
+      "ordem": 1, "periodo": "out–dez/2026", "data_inicio": "2026-10-01", "data_fim": "2026-12-31",
+      "nucleo": { "titulo": "Aprender a aprender e clareza", "tema": "memoria" },
+      "paralela": { "titulo": "Economia: fundamentos (Sowell e Chang)", "tema": "economia-fundamentos" },
+      "idiomas_foco": "Inglês, fase 1"
+    },
+    {
+      "ordem": 2, "periodo": "jan–mar/2027", "data_inicio": "2027-01-01", "data_fim": "2027-03-31",
+      "nucleo": { "titulo": "Comunicação: oratória, retórica, storytelling", "tema": "oratoria" },
+      "paralela": { "titulo": "Direito para gestor: CF/88, CDC, CLT, contratos", "tema": "direito-basico" },
+      "idiomas_foco": "Inglês"
+    },
+    {
+      "ordem": 3, "periodo": "abr–jun/2027", "data_inicio": "2027-04-01", "data_fim": "2027-06-30",
+      "nucleo": { "titulo": "Economia: formal e Brasil", "tema": "economia-brasileira" },
+      "paralela": { "titulo": "Presença social, carisma, humor, improviso", "tema": "carisma" },
+      "idiomas_foco": "Inglês + espanhol passivo"
+    },
+    {
+      "ordem": 4, "periodo": "jul–set/2027", "data_inicio": "2027-07-01", "data_fim": "2027-09-30",
+      "nucleo": { "titulo": "História do Brasil, política, democracia", "tema": "historia-do-brasil" },
+      "paralela": { "titulo": "Neurociência", "tema": "neurociencia" },
+      "idiomas_foco": "Inglês + espanhol passivo"
+    },
+    {
+      "ordem": 5, "periodo": "out–dez/2027", "data_inicio": "2027-10-01", "data_fim": "2027-12-31",
+      "nucleo": { "titulo": "Vendas e negociação", "tema": "negociacao" },
+      "paralela": { "titulo": "IA: fundamentos", "tema": "ia" },
+      "idiomas_foco": "Inglês (meta B1)"
+    },
+    {
+      "ordem": 6, "periodo": "jan–mar/2028", "data_inicio": "2028-01-01", "data_fim": "2028-03-31",
+      "nucleo": { "titulo": "Gestão, carreira executiva, inovação", "tema": "gestao" },
+      "paralela": { "titulo": "Filosofia", "tema": "historia-da-filosofia" },
+      "idiomas_foco": "Inglês + espanhol ativo"
+    },
+    {
+      "ordem": 7, "periodo": "abr–jun/2028", "data_inicio": "2028-04-01", "data_fim": "2028-06-30",
+      "nucleo": { "titulo": "História dos EUA, em inglês", "tema": "historia-dos-eua" },
+      "paralela": { "titulo": "Teologia e sustentabilidade", "tema": "teologia" },
+      "idiomas_foco": "Inglês + espanhol"
+    },
+    {
+      "ordem": 8, "periodo": "jul–set/2028", "data_inicio": "2028-07-01", "data_fim": "2028-09-30",
+      "nucleo": { "titulo": "Programação, design, criatividade", "tema": "programacao" },
+      "paralela": { "titulo": "Economia comportamental e pensamento econômico", "tema": "economia-comportamental" },
+      "idiomas_foco": "Inglês + espanhol"
+    }
+  ]
+}

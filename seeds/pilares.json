@@ -1,0 +1,139 @@
+[
+  {
+    "numero": 1,
+    "slug": "aprender-a-aprender",
+    "nome": "Aprender a aprender",
+    "prioridade": "A",
+    "cor": "#2563eb",
+    "descricao": "Memória, clareza, pensamento organizado e raciocínio rápido.",
+    "temas": [
+      { "slug": "memoria", "nome": "Memória e técnicas de estudo" },
+      { "slug": "clareza", "nome": "Clareza" },
+      { "slug": "pensamento-organizado", "nome": "Pensamento organizado" },
+      { "slug": "raciocinio-rapido", "nome": "Raciocínio rápido" }
+    ]
+  },
+  {
+    "numero": 2,
+    "slug": "comunicacao-e-presenca",
+    "nome": "Comunicação e presença",
+    "prioridade": "A",
+    "cor": "#db2777",
+    "descricao": "Oratória, retórica, storytelling, linguagem corporal, carisma, humor, vendas e negociação.",
+    "temas": [
+      { "slug": "oratoria", "nome": "Oratória" },
+      { "slug": "retorica", "nome": "Retórica e eloquência" },
+      { "slug": "storytelling", "nome": "Storytelling" },
+      { "slug": "linguagem-corporal", "nome": "Linguagem corporal e postura" },
+      { "slug": "carisma", "nome": "Carisma e socialização" },
+      { "slug": "humor", "nome": "Humor" },
+      { "slug": "vendas", "nome": "Vendas e persuasão" },
+      { "slug": "negociacao", "nome": "Negociação" }
+    ]
+  },
+  {
+    "numero": 3,
+    "slug": "economia-e-gestao",
+    "nome": "Economia e gestão",
+    "prioridade": "A",
+    "cor": "#059669",
+    "descricao": "Micro, macro, economia brasileira, pensamento econômico, economia comportamental, gestão, carreira executiva, inovação e sustentabilidade.",
+    "temas": [
+      { "slug": "economia-fundamentos", "nome": "Fundamentos de economia (micro e macro)" },
+      { "slug": "economia-brasileira", "nome": "Economia brasileira" },
+      { "slug": "pensamento-economico", "nome": "Pensamento econômico" },
+      { "slug": "economia-comportamental", "nome": "Economia comportamental" },
+      { "slug": "gestao", "nome": "Gestão" },
+      { "slug": "carreira-executiva", "nome": "Carreira executiva" },
+      { "slug": "inovacao", "nome": "Inovação" },
+      { "slug": "sustentabilidade", "nome": "Sustentabilidade" }
+    ]
+  },
+  {
+    "numero": 4,
+    "slug": "estado-direito-politica",
+    "nome": "Estado, direito e política",
+    "prioridade": "B",
+    "cor": "#d97706",
+    "descricao": "História do Brasil e dos EUA, esquerda e direita, democracia, três poderes, Constituição, direito básico e políticos-chave.",
+    "temas": [
+      { "slug": "historia-do-brasil", "nome": "História do Brasil" },
+      { "slug": "historia-dos-eua", "nome": "História dos EUA" },
+      { "slug": "esquerda-e-direita", "nome": "Esquerda e direita" },
+      { "slug": "democracia-e-poderes", "nome": "Democracia e três poderes" },
+      { "slug": "cf88", "nome": "Constituição Federal de 1988" },
+      { "slug": "direito-basico", "nome": "Direito básico para gestor" },
+      { "slug": "politicos-chave", "nome": "Políticos-chave (~40 nomes)" }
+    ]
+  },
+  {
+    "numero": 5,
+    "slug": "tecnologia-e-criacao",
+    "nome": "Tecnologia e criação",
+    "prioridade": "B",
+    "cor": "#7c3aed",
+    "descricao": "IA, programação, design gráfico e criatividade.",
+    "temas": [
+      { "slug": "ia", "nome": "Inteligência artificial" },
+      { "slug": "programacao", "nome": "Programação" },
+      { "slug": "design-grafico", "nome": "Design gráfico" },
+      { "slug": "criatividade", "nome": "Criatividade" }
+    ]
+  },
+  {
+    "numero": 6,
+    "slug": "mente-e-cerebro",
+    "nome": "Mente e cérebro",
+    "prioridade": "C",
+    "cor": "#0891b2",
+    "descricao": "Neurociência e psicologia.",
+    "temas": [
+      { "slug": "neurociencia", "nome": "Neurociência" },
+      { "slug": "psicologia", "nome": "Psicologia" }
+    ]
+  },
+  {
+    "numero": 7,
+    "slug": "filosofia-teologia-sabedoria",
+    "nome": "Filosofia, teologia e sabedoria",
+    "prioridade": "C",
+    "cor": "#92400e",
+    "descricao": "História da filosofia, ética, teologia, Provérbios e Salmos (trilha diária).",
+    "temas": [
+      { "slug": "historia-da-filosofia", "nome": "História da filosofia" },
+      { "slug": "etica", "nome": "Ética" },
+      { "slug": "teologia", "nome": "Teologia" },
+      { "slug": "proverbios-e-salmos", "nome": "Provérbios e Salmos" }
+    ]
+  },
+  {
+    "numero": 8,
+    "slug": "idiomas",
+    "nome": "Idiomas",
+    "prioridade": "A",
+    "cor": "#dc2626",
+    "descricao": "Inglês (A), espanhol (B), italiano, francês, russo e mandarim (C). Estudados em sequência, nunca dois novos em paralelo.",
+    "temas": [
+      { "slug": "ingles", "nome": "Inglês" },
+      { "slug": "espanhol", "nome": "Espanhol" },
+      { "slug": "italiano", "nome": "Italiano" },
+      { "slug": "frances", "nome": "Francês" },
+      { "slug": "russo", "nome": "Russo" },
+      { "slug": "mandarim", "nome": "Mandarim" }
+    ]
+  },
+  {
+    "numero": 0,
+    "slug": "base-fisica",
+    "nome": "Base física",
+    "prioridade": "continua",
+    "cor": "#65a30d",
+    "descricao": "Sono de 7 a 9 h, 150 min de exercício aeróbico por semana, novidade semanal e desafio de iniciante.",
+    "temas": [
+      { "slug": "sono", "nome": "Sono" },
+      { "slug": "exercicio-aerobico", "nome": "Exercício aeróbico" },
+      { "slug": "novidade-semanal", "nome": "Novidade semanal" },
+      { "slug": "desafio-de-iniciante", "nome": "Desafio de iniciante" }
+    ]
+  }
+]

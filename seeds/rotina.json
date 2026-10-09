@@ -1,0 +1,83 @@
+{
+  "padrao": [
+    {
+      "id": "sabedoria",
+      "momento": "Ao acordar",
+      "minutos": 10,
+      "atividade": "Provérbios, Salmos ou leitura bíblica",
+      "pilar": 7,
+      "minimo": true
+    },
+    {
+      "id": "revisao",
+      "momento": "Manhã",
+      "minutos": 15,
+      "atividade": "Revisão de cartões (todos os pilares e idiomas misturados)",
+      "pilar": null,
+      "minimo": true
+    },
+    {
+      "id": "audio",
+      "momento": "Exercício ou trajeto",
+      "minutos": 20,
+      "atividade": "Áudio em inglês com shadowing ou audiolivro do núcleo",
+      "pilar": 8,
+      "minimo": false,
+      "acoplado": true
+    },
+    {
+      "id": "nucleo",
+      "momento": "Bloco profundo",
+      "minutos": 30,
+      "atividade": "Núcleo do trimestre: ler, fechar, resumir de memória, criar cartões",
+      "pilar": null,
+      "minimo": false
+    },
+    {
+      "id": "paralela",
+      "momento": "2–3 vezes por semana",
+      "minutos": 30,
+      "atividade": "Trilha paralela do trimestre",
+      "pilar": null,
+      "minimo": false,
+      "dias_semana": [
+        2,
+        4,
+        6
+      ]
+    },
+    {
+      "id": "leitura-livre",
+      "momento": "Antes de dormir",
+      "minutos": 15,
+      "atividade": "Leitura livre de paixão (filosofia, neurociência)",
+      "pilar": 6,
+      "minimo": false,
+      "acoplado": true,
+      "opcional": true
+    },
+    {
+      "id": "diario",
+      "momento": "Noite",
+      "minutos": 5,
+      "atividade": "Escrever 3 aprendizados do dia sem consultar",
+      "pilar": null,
+      "minimo": true
+    }
+  ],
+  "semanal": [
+    "Revisão semanal (30–45 min): o que estudei, o que esqueci, ajustes",
+    "Gravar 1 vídeo de 3 minutos explicando algo aprendido e assistir",
+    "Aplicar 1 técnica de vendas ou negociação no trabalho real e registrar o resultado",
+    "Prática social: 3 perguntas de continuação por conversa importante, 1 conversa com desconhecido, 1 contato de networking",
+    "Anotar 1 observação engraçada do dia a dia",
+    "Autoavaliação: em que situação passei calor humano, em qual passei só competência?",
+    "2 aulas de conversação de idioma com tutor",
+    "Base física: 3 a 5 sessões aeróbicas e 1 experiência nova"
+  ],
+  "sabedoria": {
+    "inicio": "2026-10-01",
+    "observacao": "Rodízio: 31 dias de Provérbios (1 capítulo por dia), depois 30 dias de Salmos (5 por dia), e recomeça."
+  },
+  "observacao": "Tempo dedicado (conta na meta): sabedoria 10 + cartões 15 + núcleo 30 + diário 5 = 60 min; +30 min de trilha paralela às terças, quintas e sábados = 90 min. Blocos 'acoplado' aparecem no checklist mas não somam na meta (acontecem junto com outra atividade ou são opcionais). Modo mínimo: sabedoria + cartões + diário = 30 min."
+}
