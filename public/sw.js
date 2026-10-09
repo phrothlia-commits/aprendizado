@@ -1,7 +1,7 @@
 // Service worker mínimo: torna o app instalável e abre o "esqueleto" offline.
 // Dados continuam vindo do Supabase (revisão offline com sincronização é item desejável, pendente).
-const CACHE = "trilha-v1";
-const ESQUELETO = ["/", "/revisar", "/trilha", "/cartoes", "/diario", "/mais", "/icone-192.png"];
+const CACHE = "trilha-v2";
+const ESQUELETO = ["/", "/revisar", "/trilha", "/biblioteca", "/voce", "/cartoes", "/diario", "/icone-192.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ESQUELETO)).then(() => self.skipWaiting()));

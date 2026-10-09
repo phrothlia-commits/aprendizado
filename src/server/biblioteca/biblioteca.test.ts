@@ -105,7 +105,7 @@ describe("PDF", () => {
 
 describe("download de obra aberta", () => {
   it("Gutenberg: página da obra vira texto integral", () => {
-    expect(normalizarUrlDownload("https://www.gutenberg.org/ebooks/2680")).toBe("https://www.gutenberg.org/ebooks/2680.txt.utf-8");
+    expect(normalizarUrlDownload("https://www.gutenberg.org/ebooks/2680")).toBe("https://www.gutenberg.org/cache/epub/2680/pg2680.txt");
   });
 
   it("detecta o formato pelo tipo de conteúdo ou extensão", () => {
@@ -129,6 +129,19 @@ describe("download de obra aberta", () => {
     const r = await baixarObraAberta("https://www.dominiopublico.gov.br/download/texto/a.pdf", f);
     expect(r.formato).toBe("pdf");
     expect(r.urlFinal).toBe("https://www.dominiopublico.gov.br/download/texto/b.pdf");
+  });
+
+  it("redirecionamento http:// no mesmo domínio legal vira https://", async () => {
+    const pedidos: string[] = [];
+    const f = (async (url: string) => {
+      pedidos.push(url);
+      return pedidos.length === 1
+        ? new Response(null, { status: 302, headers: { location: "http://www.dominiopublico.gov.br/b.pdf" } })
+        : new Response(new Uint8Array([37]), { headers: { "content-type": "application/pdf" } });
+    }) as typeof fetch;
+    const r = await baixarObraAberta("https://www.dominiopublico.gov.br/a.pdf", f);
+    expect(pedidos[1]).toBe("https://www.dominiopublico.gov.br/b.pdf");
+    expect(r.urlFinal).toBe("https://www.dominiopublico.gov.br/b.pdf");
   });
 
   it("recusa obras protegidas e domínios só de consulta", async () => {

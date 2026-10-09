@@ -67,19 +67,22 @@
   --font-serif: var(--font-newsreader), Georgia, serif;
 }
 
-html {
-  color-scheme: light dark;
-}
+/* Na camada base, para que as utilitárias (ex.: text-fundo em botões-link) tenham prioridade. */
+@layer base {
+  html {
+    color-scheme: light dark;
+  }
 
-body {
-  background: var(--fundo);
-  color: var(--texto);
-  -webkit-tap-highlight-color: transparent;
-}
+  body {
+    background: var(--fundo);
+    color: var(--texto);
+    -webkit-tap-highlight-color: transparent;
+  }
 
-a {
-  color: inherit;
-  text-decoration: none;
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 }
 
 @utility cartao-ui {

@@ -199,7 +199,7 @@ describe("POST /api/biblioteca/importar", () => {
     const r = await m.rotas.importar(pedido({ url: "https://www.gutenberg.org/ebooks/2680", titulo: "Meditações", autor: "Marco Aurélio" }));
     expect(r.status).toBe(200);
     expect(Object.keys(m.storage)[0]).toMatch(/^u1\/[0-9a-f-]+\.txt$/);
-    expect(m.inseridos[0]).toMatchObject({ origem: "fonte_aberta", formato: "txt", fonte_url: "https://www.gutenberg.org/ebooks/2680.txt.utf-8" });
+    expect(m.inseridos[0]).toMatchObject({ origem: "fonte_aberta", formato: "txt", fonte_url: "https://www.gutenberg.org/cache/epub/2680/pg2680.txt" });
     expect(processado).toBe("arq-1");
   });
 });

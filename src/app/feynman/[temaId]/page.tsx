@@ -137,7 +137,7 @@ export default function Feynman() {
             {historico.map((h) => (
               <details key={h.id} className="rounded-2xl border border-borda bg-superficie px-4 py-3">
                 <summary className="cursor-pointer text-sm font-semibold">
-                  {new Date(h.created_at).toLocaleDateString("pt-BR", { day: "numeric", month: "short" })} · {h.avaliacao.atingiu_criterio ? "critério atingido" : `${h.avaliacao.lacunas.length} lacunas`}
+                  {new Date(h.created_at).toLocaleDateString("pt-BR", { day: "numeric", month: "short" })} · {h.avaliacao.atingiu_criterio ? "critério atingido" : `${h.avaliacao.lacunas.length} ${h.avaliacao.lacunas.length === 1 ? "lacuna" : "lacunas"}`}
                 </summary>
                 <p className="mt-2 text-sm text-texto-2">{h.explicacao}</p>
                 <ul className="mt-2 flex flex-col gap-1 text-sm">

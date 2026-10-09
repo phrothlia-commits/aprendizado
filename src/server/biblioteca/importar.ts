@@ -15,13 +15,20 @@ export function urlPermitidaParaDownload(url: string): boolean {
   return !!c && c.permiteDownload && url.startsWith("https://");
 }
 
-/** Projeto Gutenberg: a página da obra vira o arquivo de texto integral. */
+/** Projeto Gutenberg: a página da obra vira o arquivo de texto integral (endereço canônico do acervo). */
 export function normalizarUrlDownload(url: string): string {
   const u = new URL(url);
   const host = u.hostname.replace(/^www\./, "");
-  const gutenberg = host === "gutenberg.org" && u.pathname.match(/^\/ebooks\/(\d+)\/?$/);
-  if (gutenberg) return `https://www.gutenberg.org/ebooks/${gutenberg[1]}.txt.utf-8`;
+  const gutenberg = host === "gutenberg.org" && u.pathname.match(/^\/ebooks\/(\d+)(\.txt\.utf-8)?\/?$/);
+  if (gutenberg) return `https://www.gutenberg.org/cache/epub/${gutenberg[1]}/pg${gutenberg[1]}.txt`;
   return url;
+}
+
+/** Redirecionamento para http:// num domínio da lista é tratado como https:// (nunca baixamos sem TLS). */
+function proximoDestino(destino: string, atual: string): string {
+  const u = new URL(destino, atual);
+  if (u.protocol === "http:") u.protocol = "https:";
+  return u.toString();
 }
 
 export function formatoDe(tipoConteudo: string, url: string): Formato | null {
@@ -51,7 +58,7 @@ export async function baixarObraAberta(
     if (r.status >= 300 && r.status < 400) {
       const destino = r.headers.get("location");
       if (!destino) break;
-      const proximo = new URL(destino, url).toString();
+      const proximo = proximoDestino(destino, url);
       if (!urlPermitidaParaDownload(proximo)) {
         throw new ErroApp("fonte_nao_permitida", 400, "O link redirecionou para um site fora da lista de fontes legais. Download cancelado.");
       }

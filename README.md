@@ -13,6 +13,7 @@ Especificação completa: documento "Plataforma de Trilha de Estudos — Especif
 1. No painel do Supabase, abra **SQL Editor → New query**.
 2. Cole todo o conteúdo de [`supabase/migrations/0001_schema.sql`](supabase/migrations/0001_schema.sql) e clique em **Run**.
    Ele cria as 14 tabelas, liga o RLS em todas e cria as funções `semear`, `dias_ativos` e `tags_cartoes`. Pode rodar de novo sem perder dados.
+   Depois, numa nova query, rode [`supabase/migrations/0002_ia.sql`](supabase/migrations/0002_ia.sql): tabelas da camada de IA (aulas, fontes, Tutor Feynman, registro de custos, biblioteca) e o bucket privado `biblioteca` no Storage, com RLS por pasta do usuário.
 3. Em **Authentication → URL Configuration**, coloque a URL do deploy em *Site URL* (por exemplo `https://trilha.vercel.app`). Assim o link de confirmação do e-mail aponta para o app.
 
 ### 2. Rodar localmente
@@ -32,7 +33,7 @@ npm run dev                  # http://localhost:3000
 ### 4. Deploy na Vercel
 
 1. Importe o repositório na Vercel (o framework Next.js é detectado sozinho).
-2. Em *Environment Variables*, cadastre `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+2. Em *Environment Variables*, cadastre `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` e `ANTHROPIC_API_KEY` (esta última **sem** o prefixo `NEXT_PUBLIC_`: ela só existe no servidor e nunca vai para o navegador).
 3. Faça o deploy e, no celular, abra a URL e use **Adicionar à tela inicial** para instalar o PWA.
 
 ## Comandos
@@ -40,7 +41,7 @@ npm run dev                  # http://localhost:3000
 | Comando | O que faz |
 |---|---|
 | `npm run dev` | Servidor de desenvolvimento |
-| `npm test` | Testes do agendamento, da fila, da tela Hoje, dos seeds e do CSV |
+| `npm test` | Testes do agendamento, da fila, da tela Hoje, dos seeds, do CSV, das rotas de IA, do parsing das respostas, da verificação de links e da extração da biblioteca |
 | `npm run typecheck` / `npm run lint` | Checagens estáticas |
 | `npm run build` | Build de produção |
 
@@ -53,9 +54,24 @@ src/lib/agendamento/        FSRS e SM-2 atrás de uma interface única (sem UI, 
 src/lib/fila.ts             Fila diária: limites, prioridade de vencidos, intercalação por pilar
 src/lib/hoje.ts             Regras da tela Hoje: rotina, modo mínimo, sabedoria do dia, sequência
 src/lib/seed.ts             Monta a carga inicial a partir de /seeds
-src/lib/db.ts               Acesso ao Supabase
-src/app/                    Telas: Hoje, Revisar, Trilha, Cartões, Diário, Mais
+src/lib/db.ts, src/lib/ia.ts Acesso ao Supabase e às rotas de IA a partir do navegador
+src/app/                    Telas (abas Hoje, Trilha, Biblioteca, Você; fluxos de aula, revisão e Feynman)
+src/app/api/                Rotas do servidor: aula, Feynman, busca de PDF legal, biblioteca
+src/server/ia/              Pipeline de IA: busca, composição, custos, erros, schemas (só servidor)
+src/server/fontes/          Lista de fontes legais e verificação de links
+src/server/biblioteca/      Extração de PDF/EPUB/TXT/HTML/Kindle e download de obras abertas
+prompts/                    Prompts de sistema, em português
 ```
+
+## Camada de IA
+
+Todas as chamadas à API do Claude acontecem no servidor, com `ANTHROPIC_API_KEY`. Modelo: Claude Opus 5.5, com o fallback do servidor ligado (se o modelo recusar por política, a própria API tenta um modelo alternativo).
+
+- **Aula guiada:** botão "Começar aula" no passo Aprender. São duas chamadas: (1) busca na web restrita aos domínios legais de `src/server/fontes/dominios.ts`; (2) composição da aula em JSON validado por schema. A IA só cita fontes por identificador (S1, S2…, ou T1, T2… para trechos da sua biblioteca); os links vêm exclusivamente dos resultados da busca e cada um é verificado no servidor antes de aparecer. Link quebrado é descartado.
+- **Fontes legais:** domínio público, acesso aberto, documentos oficiais e cursos gratuitos oficiais; para livros protegidos, só prévia, empréstimo, assinatura ou compra. Padrões de cópia pirata e arquivos de obras protegidas são descartados.
+- **Busca de PDF legal:** restrita aos 16 domínios marcados para download (domínio público, acesso aberto, fontes oficiais). O botão "Adicionar à biblioteca" baixa só desses domínios, verificando cada redirecionamento.
+- **Biblioteca:** arquivos no Storage privado; o texto é dividido em trechos com capítulo e página e indexado com busca full-text. A aula e o Tutor Feynman usam os trechos relevantes e citam capítulo e página.
+- **Custos:** cada chamada é registrada (tokens, buscas, custo estimado). Gasto do mês e limite diário em Você › Configurações. Uma aula usa 2 chamadas; Feynman e busca de PDF, 1.
 
 Decisões de modelagem que vale conhecer:
 
