@@ -1,0 +1,129 @@
+{
+  "tema": "cf88",
+  "fonte": "Constituição Federal de 1988 — texto no site do Planalto",
+  "cartoes": [
+    {
+      "frente": "Quando foi promulgada a Constituição Federal atual?",
+      "verso": "5 de outubro de 1988",
+      "tags": [
+        "cf88"
+      ]
+    },
+    {
+      "frente": "Quais são os fundamentos da República (art. 1º)?",
+      "verso": "Soberania; cidadania; dignidade da pessoa humana; valores sociais do trabalho e da livre iniciativa; pluralismo político",
+      "tags": [
+        "cf88"
+      ]
+    },
+    {
+      "frente": "Quais são os Poderes da União (art. 2º) e como se relacionam?",
+      "verso": "Legislativo, Executivo e Judiciário, independentes e harmônicos entre si",
+      "tags": [
+        "cf88",
+        "tres-poderes"
+      ]
+    },
+    {
+      "frente": "Quais são os objetivos fundamentais da República (art. 3º)?",
+      "verso": "Construir sociedade livre, justa e solidária; garantir o desenvolvimento nacional; erradicar a pobreza e a marginalização e reduzir as desigualdades; promover o bem de todos sem preconceitos",
+      "tags": [
+        "cf88"
+      ]
+    },
+    {
+      "frente": "Quais entes compõem a Federação (art. 18)?",
+      "verso": "União, Estados, Distrito Federal e Municípios, todos autônomos",
+      "tags": [
+        "cf88"
+      ]
+    },
+    {
+      "frente": "Qual artigo trata dos direitos e deveres individuais e coletivos?",
+      "verso": "Art. 5º",
+      "tags": [
+        "cf88",
+        "direitos"
+      ]
+    },
+    {
+      "frente": "Para que serve o habeas corpus?",
+      "verso": "Proteger a liberdade de locomoção contra violência ou coação por ilegalidade ou abuso de poder (art. 5º, LXVIII)",
+      "tags": [
+        "cf88",
+        "direitos"
+      ]
+    },
+    {
+      "frente": "Para que serve o mandado de segurança?",
+      "verso": "Proteger direito líquido e certo não amparado por habeas corpus ou habeas data, contra ilegalidade ou abuso de poder de autoridade (art. 5º, LXIX)",
+      "tags": [
+        "cf88",
+        "direitos"
+      ]
+    },
+    {
+      "frente": "Quais são as cláusulas pétreas (art. 60, §4º)?",
+      "verso": "Forma federativa de Estado; voto direto, secreto, universal e periódico; separação dos Poderes; direitos e garantias individuais",
+      "tags": [
+        "cf88",
+        "tres-poderes"
+      ]
+    },
+    {
+      "frente": "Como uma PEC é aprovada?",
+      "verso": "Em dois turnos em cada Casa do Congresso, com 3/5 dos votos dos membros em cada turno (art. 60, §2º)",
+      "tags": [
+        "cf88",
+        "tres-poderes"
+      ]
+    },
+    {
+      "frente": "O que compõe o Congresso Nacional (art. 44)?",
+      "verso": "Câmara dos Deputados e Senado Federal",
+      "tags": [
+        "cf88",
+        "tres-poderes"
+      ]
+    },
+    {
+      "frente": "Qual é o mandato de um senador e quantos há por estado?",
+      "verso": "8 anos; 3 senadores por estado e pelo Distrito Federal, com renovação alternada de 1/3 e 2/3 a cada 4 anos",
+      "tags": [
+        "cf88",
+        "tres-poderes"
+      ]
+    },
+    {
+      "frente": "Qual é o mandato de um deputado federal?",
+      "verso": "4 anos; eleitos pelo sistema proporcional",
+      "tags": [
+        "cf88",
+        "tres-poderes"
+      ]
+    },
+    {
+      "frente": "Qual é o mandato do Presidente da República e quantas reeleições são permitidas?",
+      "verso": "4 anos, com uma reeleição consecutiva (EC 16/1997)",
+      "tags": [
+        "cf88",
+        "tres-poderes"
+      ]
+    },
+    {
+      "frente": "Quantos ministros tem o STF e como são nomeados?",
+      "verso": "11 ministros, nomeados pelo Presidente após aprovação por maioria absoluta do Senado (art. 101)",
+      "tags": [
+        "cf88",
+        "tres-poderes"
+      ]
+    },
+    {
+      "frente": "Quais são os requisitos da iniciativa popular de lei (art. 61, §2º)?",
+      "verso": "Assinatura de no mínimo 1% do eleitorado nacional, distribuído por pelo menos 5 estados, com no mínimo 0,3% dos eleitores de cada um",
+      "tags": [
+        "cf88"
+      ]
+    }
+  ]
+}

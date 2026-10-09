@@ -1,0 +1,34 @@
+[
+  {
+    "nome": "Inglês", "nivel_atual": "A2", "meta": "C1", "ambicao": "Domínio", "status": "ativo",
+    "motivo": "Negócios, IA, tecnologia, maior parte do conteúdo da trilha. Nível inicial: básico+.",
+    "marcos": [
+      { "titulo": "Mês 1: 300 palavras nos cartões e 30 dias seguidos de estudo", "atingido_em": null },
+      { "titulo": "Mês 2: conversa de 30 minutos com tutor sem travar", "atingido_em": null },
+      { "titulo": "Mês 3: entender um episódio de 6 Minute English sem legenda", "atingido_em": null },
+      { "titulo": "Ano 1: B1/B2", "atingido_em": null },
+      { "titulo": "Ano 2: C1", "atingido_em": null }
+    ]
+  },
+  {
+    "nome": "Espanhol", "nivel_atual": "A0", "meta": "B2", "ambicao": "Estratégico", "status": "fila",
+    "motivo": "Mercosul e América Latina; o mais rápido para falantes de português. Passivo a partir do mês 6; ativo no ano 2.",
+    "marcos": [{ "titulo": "Ano 2: B2", "atingido_em": null }]
+  },
+  {
+    "nome": "Italiano", "nivel_atual": "A0", "meta": "B1", "ambicao": "Paixão e cultura", "status": "fila",
+    "motivo": "Rápido depois do espanhol. Ano 3 (italiano ou francês).", "marcos": []
+  },
+  {
+    "nome": "Francês", "nivel_atual": "A0", "meta": "B1", "ambicao": "Paixão e cultura", "status": "fila",
+    "motivo": "Rápido depois do espanhol. Ano 3 (italiano ou francês).", "marcos": []
+  },
+  {
+    "nome": "Russo", "nivel_atual": "A0", "meta": "A2", "ambicao": "Paixão e cultura", "status": "fila",
+    "motivo": "~1.100 h até proficiência (FSI). Ano 4 em diante. Alfabeto cirílico como degustação no ano 1.", "marcos": []
+  },
+  {
+    "nome": "Mandarim", "nivel_atual": "A0", "meta": "A2", "ambicao": "Paixão e cultura", "status": "fila",
+    "motivo": "~2.200 h até proficiência (FSI). Ano 4 em diante.", "marcos": []
+  }
+]
