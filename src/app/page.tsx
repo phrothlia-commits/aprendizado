@@ -54,7 +54,7 @@ export default function Hoje() {
           <p className="text-sm text-texto-2">{formatarData(d.hoje)}</p>
           <h1 className="titulo-pagina">Hoje</h1>
           <p className="mt-1 text-sm text-texto-2">
-            {resumo.minutosRestantes > 0 ? `Faltam ~${resumo.minutosRestantes} min de ${resumo.minutosTotais}` : "Dia completo ✓"}
+            {resumo.minutosRestantes > 0 ? `Faltam ~${resumo.minutosRestantes} min de ${resumo.minutosTotais} dedicados` : "Dia completo ✓"}
           </p>
         </div>
         <div className="text-right">
@@ -146,6 +146,7 @@ export default function Hoje() {
                   </p>
                   <p className="text-xs text-texto-2">
                     {i.momento} · {i.minutos} min
+                    {i.acoplado && ` · acoplado${i.opcional ? ", opcional" : ""} (fora da meta)`}
                   </p>
                 </div>
               </li>

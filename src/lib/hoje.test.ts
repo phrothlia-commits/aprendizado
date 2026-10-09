@@ -14,10 +14,17 @@ describe("rotina do dia", () => {
     expect(itensDoDia("padrao", "2026-10-09").some((i) => i.id === "paralela")).toBe(false); // sexta
   });
 
-  it("modo padrão usa os tempos mínimos da tabela: 95 min, 125 com a paralela", () => {
-    const soma = (d: string) => itensDoDia("padrao", d).reduce((s, i) => s + i.minutos, 0);
-    expect(soma("2026-10-09")).toBe(95);
-    expect(soma("2026-10-06")).toBe(125);
+  it("modo padrão: 60 min dedicados, 90 nos dias de trilha paralela", () => {
+    const dedicado = (d: string) => montarResumo({ modo: "padrao", data: d, checklist: {}, cartoesPendentes: 5, revisoesHoje: 0, diarioCompleto: false }).minutosTotais;
+    expect(dedicado("2026-10-09")).toBe(60); // sexta
+    expect(dedicado("2026-10-06")).toBe(90); // terça
+  });
+
+  it("áudio e leitura livre aparecem no checklist, mas não somam na meta", () => {
+    const r = montarResumo({ modo: "padrao", data: "2026-10-09", checklist: { audio: true, "leitura-livre": true }, cartoesPendentes: 5, revisoesHoje: 0, diarioCompleto: false });
+    expect(r.itens.map((i) => i.id)).toEqual(expect.arrayContaining(["audio", "leitura-livre"]));
+    expect(r.progresso).toBe(0);
+    expect(r.minutosRestantes).toBe(60);
   });
 });
 

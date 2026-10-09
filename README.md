@@ -60,6 +60,7 @@ src/app/                    Telas: Hoje, Revisar, Trilha, Cartões, Diário, Mai
 Decisões de modelagem que vale conhecer:
 
 - **Sabedoria do dia:** rodízio de 61 dias a partir de 01/10/2026: Provérbios 1 a 31 (um capítulo por dia), depois Salmos 1 a 150 (5 por dia).
+- **Blocos acoplados** (`"acoplado": true` em `seeds/rotina.json`) aparecem no checklist, mas ficam fora da meta de minutos e da barra de progresso.
 - **Trilha paralela:** aparece no checklist às terças, quintas e sábados (`dias_semana` em `seeds/rotina.json`).
 - **Sequência:** um dia conta se houve revisão, diário, item do checklist ou sessão de estudo.
 - **Reordenar a fila de trimestres** troca núcleo e paralela entre dois trimestres futuros; as datas ficam e nenhum tema é removido.
@@ -82,13 +83,13 @@ Decisões de modelagem que vale conhecer:
 - [x] PWA instalável (manifest, ícones, service worker)
 - [ ] Deploy na Vercel e teste no seu celular (depende da sua conta)
 
-**Validação:** 48 testes automatizados; teste ponta a ponta no Chromium (celular e desktop, claro e escuro) contra Postgres + PostgREST locais com o mesmo SQL: login, Hoje em ~170 ms, modo mínimo, 12 revisões, criação de cartão, reordenação de trimestre, diário com busca e exportação. Nenhum erro no console.
+**Validação:** 49 testes automatizados; teste ponta a ponta no Chromium (celular e desktop, claro e escuro) contra Postgres + PostgREST locais com o mesmo SQL: login, Hoje em ~170 ms, modo mínimo, 12 revisões, criação de cartão, reordenação de trimestre, diário com busca e exportação. Nenhum erro no console.
 
 **Pendências e riscos**
 
 - Revisão **offline** com sincronização posterior (marcada como "desejável" na especificação) não foi feita. Hoje o app abre offline, mas precisa de rede para carregar e salvar dados.
 - Os 100 cartões de inglês seguem a **ordem aproximada** da NGSL, sem as palavras gramaticais. Para a lista oficial completa, importe o CSV da NGSL na tela Cartões.
-- A tabela de rotina da seção 7 soma **95 a 130 min por dia**, não os 75 a 90 min indicados no texto. O app usa os tempos mínimos de cada bloco: 95 min, ou 125 min nos dias de trilha paralela. Ajuste em `seeds/rotina.json` se quiser outra carga.
+- **Carga diária (decidida após a Fase 1):** a meta conta só o tempo dedicado: sabedoria 10 + cartões 15 + núcleo 30 + diário 5 = **60 min**, e **90 min** nos dias de trilha paralela (ter, qui, sáb). Áudio em inglês no trajeto (20 min) e leitura livre antes de dormir (15 min, opcional) aparecem no checklist como blocos *acoplados* e não somam na meta. O modo mínimo continua em 30 min.
 - Siga o próprio risco nº 1 da especificação: use a Fase 1 por **30 dias** antes de pedir a Fase 2.
 
 **Próxima fase (2):** Biblioteca, Prática, Hábitos, Progresso (retenção, horas por pilar, alerta de pilar parado há 12 meses) e roteiro guiado da revisão semanal. As tabelas já existem no schema.

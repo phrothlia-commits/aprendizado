@@ -15,6 +15,9 @@ export type ItemRotina = {
   pilar: number | null;
   minimo: boolean;
   dias_semana?: number[];
+  /** Acontece junto com outra atividade (trajeto, antes de dormir): aparece no checklist, mas não soma na meta. */
+  acoplado?: boolean;
+  opcional?: boolean;
 };
 
 export const ROTINA: ItemRotina[] = rotinaSeed.padrao;
@@ -119,8 +122,9 @@ export function montarResumo(params: {
     diario: diarioCompleto,
   };
   const itens = itensDoDia(modo, data).map((i) => ({ ...i, feito: Boolean(checklist[i.id] || automaticos[i.id]) }));
-  const minutosTotais = itens.reduce((s, i) => s + i.minutos, 0);
-  const minutosRestantes = itens.filter((i) => !i.feito).reduce((s, i) => s + i.minutos, 0);
+  const dedicados = itens.filter((i) => !i.acoplado);
+  const minutosTotais = dedicados.reduce((s, i) => s + i.minutos, 0);
+  const minutosRestantes = dedicados.filter((i) => !i.feito).reduce((s, i) => s + i.minutos, 0);
   return {
     itens,
     minutosTotais,
