@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CabecalhoVoltar } from "@/components/ui";
 import { dataLocal, formatarData } from "@/lib/datas";
 import { buscarDiarios, salvarDiario } from "@/lib/db";
 import type { Diario } from "@/lib/tipos";
@@ -46,9 +47,9 @@ export default function DiarioPagina() {
   }
 
   return (
-    <div className="space-y-5">
-      <h1 className="titulo-pagina">Diário</h1>
-      <form onSubmit={salvar} className="cartao-ui space-y-3">
+    <div className="flex flex-col gap-5">
+      <CabecalhoVoltar voltar="/" sobre="Refletir" titulo="Diário" />
+      <form onSubmit={salvar} className="cartao-ui flex flex-col gap-3">
         <div>
           <p className="rotulo">3 aprendizados de hoje</p>
           <p className="text-xs text-texto-2">Escreva de memória, sem consultar. É prática de recuperação.</p>
@@ -72,14 +73,14 @@ export default function DiarioPagina() {
           <button className="botao-primario" disabled={estado === "salvando" || !itens.some((x) => x.trim())}>
             Salvar
           </button>
-          {estado === "salvo" && <span className="text-sm text-sucesso">Salvo ✓</span>}
+          {estado === "salvo" && <span className="text-sm font-semibold text-ok">Salvo ✓</span>}
         </div>
       </form>
 
-      <section className="space-y-3">
+      <section className="flex flex-col gap-3">
         <input className="campo" placeholder="Buscar no histórico" value={busca} onChange={(e) => setBusca(e.target.value)} />
         {historico?.length === 0 && <p className="text-sm text-texto-2">Nada encontrado.</p>}
-        <ul className="space-y-2">
+        <ul className="flex flex-col gap-2">
           {historico?.map((d) => (
             <li key={d.id} className="cartao-ui">
               <p className="text-xs text-texto-2">{formatarData(d.data)}</p>

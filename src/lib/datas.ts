@@ -40,3 +40,9 @@ export function formatarData(s: string): string {
   const t = deDataLocal(s).toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
+
+/** Segunda-feira da semana de uma data 'AAAA-MM-DD'. */
+export function inicioDaSemana(s: string): string {
+  const dia = deDataLocal(s).getDay(); // 0 = domingo
+  return somarDias(s, dia === 0 ? -6 : 1 - dia);
+}

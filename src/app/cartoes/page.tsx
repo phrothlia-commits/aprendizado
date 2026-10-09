@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useApp } from "@/components/AppShell";
+import { CabecalhoVoltar } from "@/components/ui";
 import { baixarArquivo, lerCsvCartoes, paraCsv } from "@/lib/csv";
 import { dataLocal } from "@/lib/datas";
 import { atualizarCartao, buscarCartoes, contarCartoes, criarCartoes, excluirCartao, todasTags, todosCartoes, type NovoCartao } from "@/lib/db";
@@ -81,14 +82,14 @@ export default function Cartoes() {
   const nomeTema = (id: string | null) => temas.find((t) => t.id === id)?.nome;
 
   return (
-    <div className="space-y-5">
-      <header className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="titulo-pagina">Cartões</h1>
+    <div className="flex flex-col gap-5">
+      <CabecalhoVoltar voltar="/voce" sobre="Você" titulo="Cartões" />
+      <header className="flex flex-wrap items-center justify-end gap-2">
         <div className="flex gap-2">
-          <button className="botao-secundario" onClick={() => arquivo.current?.click()}>
+          <button className="botao h-10 rounded-full bg-superficie-2 px-3.5 text-[13px]" onClick={() => arquivo.current?.click()}>
             Importar CSV
           </button>
-          <button className="botao-secundario" onClick={exportar}>
+          <button className="botao h-10 rounded-full bg-superficie-2 px-3.5 text-[13px]" onClick={exportar}>
             Exportar CSV
           </button>
           <input
@@ -127,7 +128,7 @@ export default function Cartoes() {
         }}
       />
 
-      <section className="space-y-3">
+      <section className="flex flex-col gap-3">
         <div className="grid gap-2 sm:grid-cols-3">
           <input className="campo" placeholder="Buscar na frente ou no verso" value={texto} onChange={(e) => setTexto(e.target.value)} />
           <select className="campo" value={filtroPilar} onChange={(e) => setFiltroPilar(e.target.value)}>
@@ -148,7 +149,7 @@ export default function Cartoes() {
         <p className="text-xs text-texto-2">
           {lista ? `${lista.length} exibidos` : "Carregando…"} · {total} no total
         </p>
-        <ul className="space-y-2">
+        <ul className="flex flex-col gap-2">
           {lista?.map((c) => (
             <li key={c.id} className={`cartao-ui ${c.suspenso ? "opacity-50" : ""}`}>
               <div className="flex items-start justify-between gap-3">
@@ -169,7 +170,7 @@ export default function Cartoes() {
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-col gap-1 text-xs">
-                  <button className="text-destaque" onClick={() => (setEditando(c), window.scrollTo({ top: 0, behavior: "smooth" }))}>
+                  <button className="font-semibold text-texto" onClick={() => (setEditando(c), window.scrollTo({ top: 0, behavior: "smooth" }))}>
                     Editar
                   </button>
                   <button
@@ -253,7 +254,7 @@ function FormCartao({
   const temasDoPilar = temas.filter((t) => t.pilar_id === pilarId);
 
   return (
-    <form onSubmit={salvar} className="cartao-ui space-y-3">
+    <form onSubmit={salvar} className="cartao-ui flex flex-col gap-3">
       <p className="rotulo">{inicial ? "Editar cartão" : "Novo cartão"}</p>
       <div className="flex gap-1.5">
         {(Object.keys(TIPOS_CARTAO) as TipoCartao[]).map((t) => (
@@ -261,7 +262,7 @@ function FormCartao({
             type="button"
             key={t}
             onClick={() => setTipo(t)}
-            className={`rounded-full border px-3 py-1 text-xs ${tipo === t ? "border-destaque bg-destaque text-destaque-texto" : "border-borda"}`}
+            className={`rounded-full border px-3 py-1 text-xs ${tipo === t ? "border-texto bg-texto text-fundo" : "border-borda"}`}
           >
             {TIPOS_CARTAO[t]}
           </button>
@@ -313,7 +314,7 @@ function FormCartao({
             Cancelar
           </button>
         )}
-        {ok && <span className="text-sm text-sucesso">Criado ✓</span>}
+        {ok && <span className="text-sm font-semibold text-ok">Criado ✓</span>}
       </div>
     </form>
   );

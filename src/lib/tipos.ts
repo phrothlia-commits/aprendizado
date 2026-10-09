@@ -3,7 +3,7 @@ import type { ModoDia } from "./hoje";
 
 type Base = { id: string; created_at: string; updated_at: string };
 
-export type Configuracoes = { novos_por_dia: number; revisoes_por_dia: number; algoritmo: Algoritmo };
+export type Configuracoes = { novos_por_dia: number; revisoes_por_dia: number; algoritmo: Algoritmo; ia_limite_diario?: number };
 
 export type Pilar = Base & {
   numero: number;
@@ -85,6 +85,7 @@ export type Habito = Base & {
   novidade: string | null;
   modo: ModoDia;
   checklist: Record<string, boolean>;
+  tipo_exercicio: string | null;
 };
 
 export type Idioma = Base & {
@@ -96,6 +97,84 @@ export type Idioma = Base & {
   horas_acumuladas: number;
   marcos: { titulo: string; atingido_em: string | null }[];
   status: "ativo" | "passivo" | "fila";
+};
+
+export type AulaResumo = { id: string; passo: "nucleo" | "paralela"; titulo: string; trimestre_id: string | null; estudada_em: string | null; created_at: string };
+
+export type RefNumerada = { n: number; citacao: string; url: string | null; titulo: string | null; acesso: string | null; origem: "busca" | "biblioteca" | "obra"; arquivo_id: string | null };
+export type FonteAula = { id: string; url: string; titulo: string; tipo: string; categoria: string; acesso: string; gratuita: boolean; permiteDownload: boolean; autor: string | null; por_que: string };
+export type CartaoProposto = { frente: string; verso: string; tipo: "basico" | "por_que"; tags: string[]; fonte: string };
+export type ConteudoAula = {
+  titulo: string;
+  objetivo: string;
+  pre_teste: { pergunta: string; resposta: string }[];
+  blocos: { titulo: string; paragrafos: { texto: string; refs: number[] }[]; analogia: string; perguntas: { pergunta: string; resposta: string }[] }[];
+  referencias: RefNumerada[];
+  para_ir_alem: FonteAula[];
+  cartoes: CartaoProposto[];
+  avisos: string[];
+};
+export type Aula = AulaResumo & {
+  tema_id: string | null;
+  conteudo: ConteudoAula;
+  respostas: { pre?: string[]; rec?: Record<string, string>; passo?: number };
+  cartoes_resolvidos: { i: number; status: "aprovado" | "descartado" }[];
+  usou_biblioteca: boolean;
+};
+
+export type Fonte = {
+  id: string;
+  aula_id: string | null;
+  tema_id: string | null;
+  tipo: string;
+  categoria: string;
+  titulo: string;
+  autor: string | null;
+  url: string;
+  gratuita: boolean;
+  acesso: string | null;
+  permite_download: boolean;
+  consumido: boolean;
+  created_at: string;
+};
+
+export type AvaliacaoFeynman = {
+  correto: string[];
+  lacunas: string[];
+  erros: { trecho: string; correcao: string; referencia: string }[];
+  perguntas: string[];
+  cartoes: CartaoProposto[];
+  atingiu_criterio: boolean;
+  referencias: string[];
+};
+export type RegistroFeynman = { id: string; tema_id: string; explicacao: string; avaliacao: AvaliacaoFeynman; created_at: string };
+
+export type ArquivoBiblioteca = {
+  id: string;
+  recurso_id: string | null;
+  titulo: string;
+  autor: string | null;
+  formato: "pdf" | "epub" | "txt" | "kindle" | "html";
+  caminho: string;
+  tamanho_bytes: number | null;
+  origem: "upload" | "fonte_aberta";
+  fonte_url: string | null;
+  status: "processando" | "pronto" | "erro";
+  erro: string | null;
+  total_trechos: number;
+  created_at: string;
+};
+
+export type Recurso = {
+  id: string;
+  titulo: string;
+  autor: string | null;
+  tipo: "livro" | "curso" | "video" | "podcast" | "lei";
+  url: string | null;
+  pilar_id: string | null;
+  tema_id: string | null;
+  status: "quero_ler" | "lendo" | "concluido";
+  anotacoes: string | null;
 };
 
 export const TABELAS_EXPORTACAO = [
@@ -113,4 +192,10 @@ export const TABELAS_EXPORTACAO = [
   "habitos",
   "idiomas",
   "passagens_sabedoria",
+  "aulas",
+  "fontes",
+  "feynman",
+  "ia_chamadas",
+  "biblioteca_arquivos",
+  "biblioteca_trechos",
 ] as const;
