@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApp } from "@/components/AppShell";
 import { IconeCheck, IconeExterno, IconeFechar, IconeLampada, IconeOlhoFechado, IconeSeta, IconeTipoFonte } from "@/components/icones";
 import { Aviso, CaixaErro, Esqueleto, Etapas, Folha, Rodape, TopoFluxo } from "@/components/ui";
-import { adicionarObraAberta, carregarAula, concluirAula, guardarCartoesPropostos, marcarConsumida, salvarProgressoAula } from "@/lib/ia";
+import { adicionarObraAberta, carregarAula, concluirAula, explicarDeOutroJeito, guardarCartoesPropostos, marcarConsumida, salvarProgressoAula } from "@/lib/ia";
 import type { Aula, CartaoProposto, RefNumerada } from "@/lib/tipos";
 
 type Etapa = { tipo: "objetivo" } | { tipo: "leitura"; b: number } | { tipo: "pergunta"; b: number; q: number } | { tipo: "fixar" };
@@ -64,8 +64,8 @@ function Fluxo({ aula }: { aula: Aula }) {
       <TopoFluxo href="/" titulo={tituloTopo} rotuloFechar="Fechar aula">
         <Etapas atual={etapaBarra} fracao={fracao} />
       </TopoFluxo>
-      {e.tipo === "objetivo" && <Objetivo aula={aula} respostas={respostas.pre ?? []} aoAvancar={(pre) => ir(1, { pre })} />}
-      {e.tipo === "leitura" && <Leitura aula={aula} b={e.b} aoAvancar={() => ir(indice + 1)} />}
+      {e.tipo === "objetivo" && <Objetivo aula={aula} respostas={respostas.pre ?? []} acertos={respostas.pre_ok ?? []} aoAvancar={(pre, pre_ok) => ir(1, { pre, pre_ok })} />}
+      {e.tipo === "leitura" && <Leitura key={e.b} aula={aula} b={e.b} aoAvancar={() => ir(indice + 1)} />}
       {e.tipo === "pergunta" && (
         <Pergunta
           key={`${e.b}-${e.q}`}
@@ -83,9 +83,21 @@ function Fluxo({ aula }: { aula: Aula }) {
 
 // --- 1. Objetivo e pré-teste ------------------------------------------------------
 
-function Objetivo({ aula, respostas, aoAvancar }: { aula: Aula; respostas: string[]; aoAvancar: (pre: string[]) => void }) {
+function Objetivo({
+  aula,
+  respostas,
+  acertos: acertosIniciais,
+  aoAvancar,
+}: {
+  aula: Aula;
+  respostas: string[];
+  acertos: (boolean | null)[];
+  aoAvancar: (pre: string[], preOk: (boolean | null)[]) => void;
+}) {
   const c = aula.conteudo;
   const [palpites, setPalpites] = useState<string[]>(() => c.pre_teste.map((_, i) => respostas[i] ?? ""));
+  // Autoavaliação: alimenta o perfil do aluno (sem IA) nas próximas aulas.
+  const [acertos, setAcertos] = useState<(boolean | null)[]>(() => c.pre_teste.map((_, i) => acertosIniciais[i] ?? null));
   const [revelado, setRevelado] = useState(respostas.length > 0);
   const respondeu = palpites.every((p) => p.trim());
   return (
@@ -121,8 +133,23 @@ function Objetivo({ aula, respostas, aoAvancar }: { aula: Aula; respostas: strin
                   onChange={(ev) => setPalpites((x) => x.map((v, k) => (k === i ? ev.target.value : v)))}
                 />
                 {revelado && (
-                  <div className="rounded-xl bg-superficie-2 px-3.5 py-3 text-sm leading-relaxed">
-                    <span className="font-semibold">Gabarito:</span> {p.resposta}
+                  <div className="flex flex-col gap-2 rounded-xl bg-superficie-2 px-3.5 py-3 text-sm leading-relaxed">
+                    <div>
+                      <span className="font-semibold">Gabarito:</span> {p.resposta}
+                    </div>
+                    <div className="flex gap-2" role="group" aria-label="Você acertou?">
+                      {([true, false] as const).map((v) => (
+                        <button
+                          key={String(v)}
+                          type="button"
+                          aria-pressed={acertos[i] === v}
+                          onClick={() => setAcertos((x) => x.map((a, k) => (k === i ? v : a)))}
+                          className={`h-8 cursor-pointer rounded-full px-3 text-xs font-semibold ${acertos[i] === v ? "bg-texto text-fundo" : "bg-superficie"}`}
+                        >
+                          {v ? "Acertei" : "Errei"}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -136,7 +163,7 @@ function Objetivo({ aula, respostas, aoAvancar }: { aula: Aula; respostas: strin
         )}
       </main>
       <Rodape>
-        <button type="button" className="botao-primario h-[52px]" disabled={c.pre_teste.length > 0 && !revelado} onClick={() => aoAvancar(palpites)}>
+        <button type="button" className="botao-primario h-[52px]" disabled={c.pre_teste.length > 0 && !revelado} onClick={() => aoAvancar(palpites, acertos)}>
           Começar a aula
           <IconeSeta />
         </button>
@@ -153,6 +180,27 @@ function Objetivo({ aula, respostas, aoAvancar }: { aula: Aula; respostas: strin
 function Leitura({ aula, b, aoAvancar }: { aula: Aula; b: number; aoAvancar: () => void }) {
   const bloco = aula.conteudo.blocos[b];
   const [ref, setRef] = useState<RefNumerada | null>(null);
+  const [alternativa, setAlternativa] = useState(bloco.alternativa ?? null);
+  const [mostrar, setMostrar] = useState(false);
+  const [pedindo, setPedindo] = useState(false);
+  const [erroAlt, setErroAlt] = useState<string | null>(null);
+
+  async function outroJeito() {
+    if (alternativa) return setMostrar((m) => !m);
+    setPedindo(true);
+    setErroAlt(null);
+    try {
+      const r = await explicarDeOutroJeito(aula.id, b);
+      const alt = { explicacao: r.explicacao, analogia: r.analogia };
+      // Guardada no servidor: pedir de novo devolve a mesma, sem chamar a API.
+      setAlternativa(alt);
+      setMostrar(true);
+    } catch (e) {
+      setErroAlt((e as Error).message);
+    } finally {
+      setPedindo(false);
+    }
+  }
   const porN = new Map(aula.conteudo.referencias.map((r) => [r.n, r]));
   return (
     <>
@@ -179,6 +227,26 @@ function Leitura({ aula, b, aoAvancar }: { aula: Aula; b: number; aoAvancar: () 
             <IconeLampada className="mt-0.5 flex-none" />
             <p className="text-[15px] leading-normal">{bloco.analogia}</p>
           </aside>
+        )}
+        <button type="button" className="botao-leve self-start" onClick={outroJeito} disabled={pedindo} aria-expanded={mostrar}>
+          {pedindo ? "Explicando de outro jeito…" : alternativa && mostrar ? "Esconder a outra explicação" : "Explicar de outro jeito"}
+        </button>
+        {erroAlt && <Aviso>{erroAlt}</Aviso>}
+        {alternativa && mostrar && (
+          <section aria-label="Outra explicação" className="flex flex-col gap-3 rounded-2xl bg-superficie-2 px-[18px] py-4">
+            <div className="rotulo">De outro jeito</div>
+            {alternativa.explicacao.split(/\n\s*\n/).map((t, i) => (
+              <p key={i} className="text-[16px] leading-relaxed">
+                {renderizarNegrito(t)}
+              </p>
+            ))}
+            {alternativa.analogia && (
+              <p className="flex gap-3 text-[15px] leading-normal">
+                <IconeLampada className="mt-0.5 flex-none" />
+                {alternativa.analogia}
+              </p>
+            )}
+          </section>
         )}
       </main>
       <Rodape>

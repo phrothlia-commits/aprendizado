@@ -3,7 +3,22 @@ import type { ModoDia } from "./hoje";
 
 type Base = { id: string; created_at: string; updated_at: string };
 
-export type Configuracoes = { novos_por_dia: number; revisoes_por_dia: number; algoritmo: Algoritmo; ia_limite_diario?: number };
+export type ModeloIA = "claude-opus-5-5" | "claude-sonnet-5-5" | "claude-haiku-5-5";
+export type Configuracoes = {
+  novos_por_dia: number;
+  revisoes_por_dia: number;
+  algoritmo: Algoritmo;
+  ia_limite_diario?: number;
+  // Colunas da migração 0003 (ausentes antes dela)
+  ia_modelo_pesquisa?: ModeloIA;
+  ia_modelo_composicao?: ModeloIA;
+  ia_modelo_feynman?: ModeloIA;
+  ia_modelo_explicar?: ModeloIA;
+  ia_modelo_reparo?: ModeloIA;
+  ia_max_buscas?: number;
+  ia_teto_mensal_usd?: number | string;
+  ia_nivel?: "iniciante" | "intermediario" | "avancado";
+};
 
 export type Pilar = Base & {
   numero: number;
@@ -108,7 +123,13 @@ export type ConteudoAula = {
   titulo: string;
   objetivo: string;
   pre_teste: { pergunta: string; resposta: string }[];
-  blocos: { titulo: string; paragrafos: { texto: string; refs: number[] }[]; analogia: string; perguntas: { pergunta: string; resposta: string }[] }[];
+  blocos: {
+    titulo: string;
+    paragrafos: { texto: string; refs: number[] }[];
+    analogia: string;
+    perguntas: { pergunta: string; resposta: string }[];
+    alternativa?: { explicacao: string; analogia: string };
+  }[];
   referencias: RefNumerada[];
   para_ir_alem: FonteAula[];
   cartoes: CartaoProposto[];
@@ -117,7 +138,7 @@ export type ConteudoAula = {
 export type Aula = AulaResumo & {
   tema_id: string | null;
   conteudo: ConteudoAula;
-  respostas: { pre?: string[]; rec?: Record<string, string>; passo?: number };
+  respostas: { pre?: string[]; pre_ok?: (boolean | null)[]; rec?: Record<string, string>; passo?: number };
   cartoes_resolvidos: { i: number; status: "aprovado" | "descartado" }[];
   usou_biblioteca: boolean;
 };

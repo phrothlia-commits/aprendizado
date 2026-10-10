@@ -1,6 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { classificarFonte, DOMINIOS_BUSCA } from "./dominios";
+import { dominiosParaBusca } from "../ia/pesquisa";
+import { classificarFonte, DOMINIOS_BUSCA, FORA_DA_BUSCA } from "./dominios";
 import { verificarLink, verificarLinks } from "./verificar";
+
+describe("domínios fora da busca", () => {
+  it("DOMINIOS_BUSCA não inclui os domínios de FORA_DA_BUSCA (a API recusa a busca inteira)", () => {
+    for (const d of FORA_DA_BUSCA) expect(DOMINIOS_BUSCA).not.toContain(d);
+    expect(DOMINIOS_BUSCA).not.toContain("bbc.co.uk");
+  });
+
+  it("classificarFonte continua aceitando bbc.co.uk quando o link chega por outro caminho", () => {
+    expect(classificarFonte("https://www.bbc.co.uk/programmes/b006qykl")).toMatchObject({ dominio: "bbc.co.uk", tipo: "audio" });
+  });
+
+  it("os domínios recusados pela API (ia_dominios_bloqueados) saem da lista da busca", () => {
+    const lista = dominiosParaBusca(DOMINIOS_BUSCA, ["ted.com", "Coursera.org"]);
+    expect(lista).not.toContain("ted.com");
+    expect(lista).not.toContain("coursera.org");
+    expect(lista).toContain("gutenberg.org");
+    expect(lista).toHaveLength(DOMINIOS_BUSCA.length - 2);
+  });
+});
 
 describe("fontes legais", () => {
   it("cabe no limite de 64 domínios da busca", () => {

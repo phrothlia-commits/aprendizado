@@ -5,15 +5,15 @@
  */
 import { z } from "zod";
 
-const PerguntaResposta = z.object({ pergunta: z.string(), resposta: z.string() });
+export const PerguntaResposta = z.object({ pergunta: z.string(), resposta: z.string() });
 
-const Referencia = z.object({
+export const Referencia = z.object({
   fonte_id: z.string().nullable().describe("Identificador da fonte da busca (S1, S2…) ou null"),
   trecho_id: z.string().nullable().describe("Identificador do trecho da biblioteca (T1, T2…) ou null"),
   citacao: z.string().describe("Autor, obra e capítulo/página ou dispositivo de lei"),
 });
 
-const CartaoProposto = z.object({
+export const CartaoProposto = z.object({
   frente: z.string(),
   verso: z.string(),
   tipo: z.enum(["basico", "por_que"]),
@@ -56,6 +56,30 @@ export const FeynmanIA = z.object({
   referencias: z.array(z.string()),
 });
 export type FeynmanIA = z.infer<typeof FeynmanIA>;
+
+/** Correção pontual da aula: só os itens que falharam na conferência. */
+export const CorrecaoIA = z.object({
+  objetivo: z.string().nullable().describe("Novo objetivo, ou null se o objetivo não foi apontado como problema"),
+  pre_teste: z.array(PerguntaResposta).nullable().describe("Pré-teste completo (2 ou 3 perguntas), ou null"),
+  blocos: z
+    .array(
+      z.object({
+        indice: z.number().int().describe("Índice do bloco (começa em 0), como veio na lista de problemas"),
+        referencias: z.array(Referencia).nullable().describe("Lista COMPLETA de referências do bloco, na ordem dos marcadores [k] do texto, ou null"),
+        perguntas_recuperacao: z.array(PerguntaResposta).nullable().describe("Perguntas de recuperação do bloco, ou null"),
+      }),
+    )
+    .describe("Somente os blocos apontados nos problemas"),
+  cartoes: z.array(CartaoProposto).nullable().describe("Lista completa de 3 a 8 cartões, ou null"),
+});
+export type CorrecaoIA = z.infer<typeof CorrecaoIA>;
+
+/** "Explicar de outro jeito": nova explicação de um bloco. */
+export const ExplicacaoIA = z.object({
+  explicacao: z.string().describe("A mesma ideia por outro caminho, em 80 a 200 palavras; parágrafos separados por linha em branco"),
+  analogia: z.string().describe("Uma analogia ou exemplo concreto diferente do original"),
+});
+export type ExplicacaoIA = z.infer<typeof ExplicacaoIA>;
 
 // ---------------------------------------------------------------------------
 // Montagem da aula salva
@@ -100,6 +124,8 @@ export type AulaSalva = {
     paragrafos: { texto: string; refs: number[] }[];
     analogia: string;
     perguntas: { pergunta: string; resposta: string }[];
+    /** Gerada sob demanda em "Explicar de outro jeito"; guardada para não chamar a API de novo. */
+    alternativa?: ExplicacaoIA;
   }[];
   referencias: RefNumerada[];
   para_ir_alem: (FonteVerificada & { autor: string | null; por_que: string })[];
@@ -193,7 +219,7 @@ export function montarAula(ia: AulaIA, fontes: FonteVerificada[], trechos: Trech
 
   const cartoes = ia.cartoes
     .filter((c) => c.frente.trim() && c.verso.trim())
-    .slice(0, 15)
+    .slice(0, 8)
     .map((c) => ({
       ...c,
       frente: semUrls(c.frente).trim(),

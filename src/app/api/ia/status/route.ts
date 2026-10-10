@@ -1,8 +1,4 @@
-import { connection } from "next/server";
-import { iaConfigurada } from "@/server/ia/cliente";
+import { rotas } from "@/server/producao";
 
-/** Diz se a chave da IA existe no servidor, sem nunca revelar o valor. */
-export async function GET() {
-  await connection(); // responde na hora da requisição, não no build
-  return Response.json({ configurada: iaConfigurada() }, { headers: { "cache-control": "no-store" } });
-}
+/** Exige login: diz se a chave existe (sem revelar o valor) e como está o gasto do mês. */
+export const POST = rotas.status;

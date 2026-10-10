@@ -1,7 +1,8 @@
 /** Dublês de teste: mensagens da API, repositório em memória e respostas da IA. */
 import type Anthropic from "@anthropic-ai/sdk";
-import type { AulaIA, FeynmanIA } from "../ia/schemas";
-import type { ContextoPasso, RegistroChamada, Repo } from "../ia/servicos";
+import { MODELO_PADRAO } from "../ia/modelos";
+import type { AulaIA, AulaSalva, FeynmanIA, FonteVerificada } from "../ia/schemas";
+import type { ConfigIA, ContextoPasso, Geracao, Params, RegistroChamada, Repo } from "../ia/tipos";
 
 type Bloco = Record<string, unknown>;
 
@@ -53,6 +54,7 @@ export function aulaIAExemplo(): AulaIA {
     cartoes: [
       { frente: "O que é ilusão de fluência?", verso: "Confundir familiaridade com saber.", tipo: "basico", tags: ["Pratica de recuperacao", "memoria", "memoria"], fonte: "T1 — cap. 2, p. 40" },
       { frente: "Por que testar-se fixa mais?", verso: "Lembrar reconstrói a informação.", tipo: "por_que", tags: ["memoria"], fonte: "Roediger e Karpicke, 2006" },
+      { frente: "O que fazer ao fechar o livro?", verso: "Escrever o que lembra.", tipo: "basico", tags: ["memoria"], fonte: "S2" },
     ],
   };
 }
@@ -76,45 +78,112 @@ export const CONTEXTO: ContextoPasso = {
   pilar: { numero: 1, nome: "Aprender a aprender" },
   recursos: [{ titulo: "Fixe o Conhecimento", autor: "Brown" }],
   aulasAnteriores: [],
+  ultimas: [],
+  proximas: [{ titulo: "Trimestre 2 (jan–mar/2027)", resumo: "Pensamento crítico" }],
 };
 
-export function repoMemoria(opcoes: { limite?: number; feitas?: number; trechos?: number } = {}) {
+export type OpcoesRepo = {
+  limite?: number;
+  feitas?: number;
+  custoMes?: number;
+  teto?: number;
+  trechos?: number;
+  maxBuscas?: number;
+  config?: Partial<ConfigIA>;
+  frentes?: string[];
+  bloqueados?: string[];
+  fontesTema?: { fontes: FonteVerificada[]; custo_usd: number; buscado_em: string } | null;
+};
+
+export function repoMemoria(opcoes: OpcoesRepo = {}) {
   const chamadas: RegistroChamada[] = [];
-  const aulas: unknown[] = [];
+  const aulas: { id: string; dados: Parameters<Repo["salvarAula"]>[0] }[] = [];
   const fontes: unknown[] = [];
   const feynman: unknown[] = [];
+  const geracoes = new Map<string, Geracao>();
+  const fontesTema = new Map<string, { fontes: FonteVerificada[]; custo_usd: number; buscado_em: string }>();
+  if (opcoes.fontesTema) fontesTema.set(CONTEXTO.tema!.id, opcoes.fontesTema);
+  const bloqueados = [...(opcoes.bloqueados ?? [])];
+  const conteudos = new Map<string, AulaSalva>();
+  const estado = { feitas: opcoes.feitas ?? 0, custoMes: opcoes.custoMes ?? 0 };
+  const cfg: ConfigIA = {
+    limiteDiario: opcoes.limite ?? 20,
+    tetoMensal: opcoes.teto ?? 15,
+    maxBuscas: opcoes.maxBuscas ?? 3,
+    nivel: "iniciante",
+    modelos: { ...MODELO_PADRAO },
+    ...opcoes.config,
+  };
   const repo: Repo = {
-    limiteDiario: async () => opcoes.limite ?? 20,
-    chamadasHoje: async () => opcoes.feitas ?? 0,
+    config: async () => cfg,
+    consumo: async () => ({ chamadasHoje: estado.feitas, custoMes: estado.custoMes }),
     registrarChamada: async (r) => {
       chamadas.push(r);
+      if (!r.reaproveitado) estado.feitas++;
+      estado.custoMes += r.custo_usd;
     },
     buscarTrechos: async () =>
-      Array.from({ length: opcoes.trechos ?? 1 }, () => ({ arquivo_id: "a1", titulo: "Fixe o Conhecimento", autor: "Brown", capitulo: "Capítulo 2", pagina: 40, texto: "Testar-se fixa." })),
+      Array.from({ length: opcoes.trechos ?? 1 }, (_, i) => ({ arquivo_id: "a1", titulo: "Fixe o Conhecimento", autor: "Brown", capitulo: "Capítulo 2", pagina: 40 + i, texto: "Testar-se fixa." })),
     contextoPasso: async () => CONTEXTO,
+    dadosPerfil: async () => ({ aulasConcluidas: ["Aula anterior"], cartoesMaisErrados: ["O que é curva do esquecimento?"], lacunasFeynman: [], preTesteErrado: [] }),
+    frentesCartoes: async () => opcoes.frentes ?? [],
+    geracao: async (id) => geracoes.get(id) ?? null,
+    geracaoAberta: async (t, p) => [...geracoes.values()].find((g) => g.trimestre_id === t && g.passo === p && g.status !== "concluida") ?? null,
+    criarGeracao: async (g) => {
+      if ([...geracoes.values()].some((x) => x.trimestre_id === g.trimestre_id && x.passo === g.passo && x.status !== "concluida")) return null;
+      const nova: Geracao = { ...g, status: "pendente", etapa_falha: null, checkpoint: {}, erro: null, aula_id: null, em_execucao_ate: null };
+      geracoes.set(g.id, nova);
+      return structuredClone(nova);
+    },
+    travarGeracao: async (id, ate, agora) => {
+      const g = geracoes.get(id);
+      if (!g || g.status === "concluida") return false;
+      if (g.em_execucao_ate && new Date(g.em_execucao_ate) >= agora) return false;
+      g.em_execucao_ate = ate.toISOString();
+      return true;
+    },
+    atualizarGeracao: async (id, patch) => {
+      const g = geracoes.get(id);
+      if (g) Object.assign(g, structuredClone(patch));
+    },
+    fontesTema: async (chave) => fontesTema.get(chave) ?? null,
+    salvarFontesTema: async (chave, f, custo) => {
+      fontesTema.set(chave, { fontes: f, custo_usd: custo, buscado_em: new Date().toISOString() });
+    },
+    dominiosBloqueados: async () => [...bloqueados],
+    registrarDominiosBloqueados: async (d) => {
+      bloqueados.push(...d);
+    },
     salvarAula: async (a) => {
-      aulas.push(a);
-      return { id: "aula-1" };
+      const id = `aula-${aulas.length + 1}`;
+      aulas.push({ id, dados: a });
+      conteudos.set(id, a.conteudo);
+      return { id };
     },
     salvarFontes: async (_a, _t, f) => {
       fontes.push(...f);
     },
+    aula: async (id) => (conteudos.has(id) ? { id, tema_id: CONTEXTO.tema!.id, conteudo: structuredClone(conteudos.get(id)!) } : null),
+    atualizarConteudoAula: async (id, c) => {
+      conteudos.set(id, c);
+    },
+    aulasDoTema: async () => [...conteudos.values()].slice(-2),
     tema: async (id) => (id === CONTEXTO.tema!.id ? { id, nome: "Repetição espaçada", nivel: "fundamentos", pilar: "Aprender a aprender" } : null),
     salvarFeynman: async (f) => {
       feynman.push(f);
       return { id: "f-1", created_at: "2026-10-09T12:00:00Z" };
     },
   };
-  return { repo, chamadas, aulas, fontes, feynman };
+  return { repo, chamadas, aulas, fontes, feynman, geracoes, fontesTema, bloqueados, conteudos, estado, cfg };
 }
 
 /** Porta da IA roteirizada: devolve as mensagens na ordem e guarda os pedidos. */
 export function iaRoteirizada(respostas: (Anthropic.Beta.BetaMessage | Error)[]) {
-  const pedidos: Anthropic.Beta.MessageCreateParamsNonStreaming[] = [];
+  const pedidos: Params[] = [];
   return {
     pedidos,
     porta: {
-      chamar: async (p: Anthropic.Beta.MessageCreateParamsNonStreaming) => {
+      chamar: async (p: Params) => {
         pedidos.push(p);
         const r = respostas.shift();
         if (!r) throw new Error("sem resposta roteirizada");
