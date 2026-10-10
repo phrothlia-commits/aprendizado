@@ -26,17 +26,17 @@ export function Login() {
 
   return (
     <main className="grid min-h-dvh place-items-center p-6">
-      <form onSubmit={enviar} className="cartao-ui w-full max-w-sm space-y-4">
+      <form onSubmit={enviar} className="cartao-destaque flex w-full max-w-sm flex-col gap-4 p-6">
         <div>
-          <h1 className="titulo-pagina">Trilha de Estudos</h1>
-          <p className="text-sm text-texto-2">O que eu estudo e reviso hoje?</p>
+          <h1 className="titulo-pagina">Trilha</h1>
+          <p className="mt-1 text-[15px] text-texto-2">O que eu estudo e reviso hoje?</p>
         </div>
         <label className="block">
-          <span className="rotulo">E-mail</span>
+          <span className="rotulo mb-1.5">E-mail</span>
           <input className="campo" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
         </label>
         <label className="block">
-          <span className="rotulo">Senha</span>
+          <span className="rotulo mb-1.5">Senha</span>
           <input
             className="campo"
             type="password"

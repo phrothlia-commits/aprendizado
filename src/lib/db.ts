@@ -1,10 +1,11 @@
 /** Acesso ao banco (Supabase). Toda regra de negócio fica em módulos puros. */
 import { revisarCartao, type Algoritmo, type Botao } from "./agendamento";
-import { dataLocal, fimDoDia, inicioDoDia, somarDias } from "./datas";
+import { dataLocal, deDataLocal, fimDoDia, inicioDaSemana, inicioDoDia, somarDias } from "./datas";
 import { montarSeed } from "./seed";
 import { supabase } from "./supabase";
 import {
   TABELAS_EXPORTACAO,
+  type AulaResumo,
   type Cartao,
   type Configuracoes,
   type Diario,
@@ -35,7 +36,7 @@ export async function carregarBase(): Promise<{ pilares: Pilar[]; temas: Tema[];
   const [p, t, c] = await Promise.all([
     sb.from("pilares").select("*").order("numero"),
     sb.from("temas").select("*").order("created_at"),
-    sb.from("configuracoes").select("novos_por_dia, revisoes_por_dia, algoritmo").maybeSingle(),
+    sb.from("configuracoes").select("*").maybeSingle(),
   ]);
   const pilares = ok(p) as Pilar[];
   // Base física (0) vai para o fim da lista.
@@ -52,7 +53,8 @@ export async function salvarConfig(c: Configuracoes) {
 export async function dadosHoje(agora = new Date()) {
   const sb = supabase();
   const hoje = dataLocal(agora);
-  const [trim, hab, dia, venc, novos, revHoje, dias] = await Promise.all([
+  const segunda = inicioDaSemana(hoje);
+  const [trim, hab, dia, venc, novos, revHoje, dias, sess, semana, aulas] = await Promise.all([
     sb.from("trimestres").select("*").order("data_inicio"),
     sb.from("habitos").select("*").eq("data", hoje).maybeSingle(),
     sb.from("diarios").select("*").eq("data", hoje).maybeSingle(),
@@ -64,10 +66,14 @@ export async function dadosHoje(agora = new Date()) {
     sb.from("cartoes").select("id", { count: "exact", head: true }).eq("suspenso", false).is("proxima_revisao", null),
     sb.from("revisoes").select("era_novo").gte("revisado_em", inicioDoDia(agora).toISOString()),
     sb.rpc("dias_ativos", { fuso: Intl.DateTimeFormat().resolvedOptions().timeZone, desde: somarDias(hoje, -400) }),
+    sb.from("sessoes_estudo").select("tipo").eq("data", hoje),
+    sb.from("habitos").select("data, minutos_exercicio, horas_sono, novidade").gte("data", segunda).lte("data", hoje),
+    sb.from("aulas").select("id, passo, titulo, trimestre_id, estudada_em, created_at").order("created_at", { ascending: false }).limit(60),
   ]);
   const revisoes = ok(revHoje) as { era_novo: boolean }[];
   ok(venc);
   ok(novos);
+  const habitosSemana = (ok(semana) as Pick<Habito, "data" | "minutos_exercicio" | "horas_sono" | "novidade">[]) ?? [];
   return {
     hoje,
     trimestres: ok(trim) as Trimestre[],
@@ -78,10 +84,14 @@ export async function dadosHoje(agora = new Date()) {
     revisoesHoje: revisoes.length,
     novosHoje: revisoes.filter((r) => r.era_novo).length,
     diasAtivos: (ok(dias) as string[]) ?? [],
+    sessoesHoje: ((ok(sess) as { tipo: string }[]) ?? []).map((x) => x.tipo),
+    exercicioSemana: habitosSemana.reduce((s, h) => s + (h.minutos_exercicio ?? 0), 0),
+    corpoRegistradoHoje: habitosSemana.some((h) => h.data === hoje && (h.horas_sono !== null || (h.minutos_exercicio ?? 0) > 0)),
+    aulas: (ok(aulas) as AulaResumo[]) ?? [],
   };
 }
 
-export async function salvarHabito(data: string, patch: Partial<Pick<Habito, "modo" | "checklist" | "horas_sono" | "minutos_exercicio" | "novidade">>) {
+export async function salvarHabito(data: string, patch: Partial<Pick<Habito, "modo" | "checklist" | "horas_sono" | "minutos_exercicio" | "novidade" | "tipo_exercicio">>) {
   return ok(await supabase().from("habitos").upsert({ data, ...patch }, { onConflict: "user_id,data" }).select().single()) as Habito;
 }
 
@@ -260,4 +270,54 @@ export async function exportarTudo(): Promise<Record<string, Record<string, unkn
   const saida: Record<string, Record<string, unknown>[]> = {};
   for (const tabela of TABELAS_EXPORTACAO) saida[tabela] = await lerTudo(tabela);
   return saida;
+}
+
+// --- Você (progresso da semana) ---------------------------------------------------
+
+export async function dadosVoce(agora = new Date()) {
+  const sb = supabase();
+  const hoje = dataLocal(agora);
+  const segunda = inicioDaSemana(hoje);
+  const inicio = deDataLocal(segunda).toISOString();
+  const trintaDias = new Date(agora.getTime() - 30 * 86400000).toISOString();
+  const [sess, rev, pass, dia, hab, ret, cartoes, vencidos, diarios, aulas] = await Promise.all([
+    sb.from("sessoes_estudo").select("data, minutos").gte("data", segunda),
+    sb.from("revisoes").select("revisado_em, tempo_resposta_ms").gte("revisado_em", inicio).limit(5000),
+    sb.from("passagens_sabedoria").select("data_lida").gte("data_lida", segunda),
+    sb.from("diarios").select("data").gte("data", segunda),
+    sb.from("habitos").select("data, minutos_exercicio").gte("data", segunda),
+    sb.from("revisoes").select("botao").eq("era_novo", false).gte("revisado_em", trintaDias).limit(5000),
+    sb.from("cartoes").select("id", { count: "exact", head: true }),
+    sb.from("cartoes").select("id", { count: "exact", head: true }).eq("suspenso", false).lte("proxima_revisao", fimDoDia(agora).toISOString()),
+    sb.from("diarios").select("id", { count: "exact", head: true }),
+    sb.from("aulas").select("id", { count: "exact", head: true }),
+  ]);
+  const minutos = new Map<string, number>();
+  const somar = (d: string, m: number) => minutos.set(d, (minutos.get(d) ?? 0) + m);
+  for (const s of (ok(sess) as { data: string; minutos: number }[]) ?? []) somar(s.data, s.minutos);
+  for (const r of (ok(rev) as { revisado_em: string; tempo_resposta_ms: number | null }[]) ?? []) somar(dataLocal(new Date(r.revisado_em)), (r.tempo_resposta_ms ?? 8000) / 60000);
+  for (const p of (ok(pass) as { data_lida: string }[]) ?? []) somar(p.data_lida, 10);
+  for (const x of (ok(dia) as { data: string }[]) ?? []) somar(x.data, 5);
+  const respostas = (ok(ret) as { botao: number }[]) ?? [];
+  const dias = Array.from({ length: 7 }, (_, i) => {
+    const data = somarDias(segunda, i);
+    return { data, minutos: data > hoje ? null : Math.round(minutos.get(data) ?? 0), hoje: data === hoje };
+  });
+  return {
+    dias,
+    totalSemana: dias.reduce((s, d) => s + (d.minutos ?? 0), 0),
+    retencao: respostas.length ? respostas.filter((r) => r.botao > 1).length / respostas.length : null,
+    revisoesRetencao: respostas.length,
+    exercicioSemana: ((ok(hab) as { minutos_exercicio: number | null }[]) ?? []).reduce((s, h) => s + (h.minutos_exercicio ?? 0), 0),
+    totalCartoes: cartoes.count ?? 0,
+    cartoesHoje: vencidos.count ?? 0,
+    totalDiarios: diarios.count ?? 0,
+    totalAulas: aulas.count ?? 0,
+  };
+}
+
+export async function habitosDaSemana(agora = new Date()) {
+  const hoje = dataLocal(agora);
+  const segunda = inicioDaSemana(hoje);
+  return ok(await supabase().from("habitos").select("*").gte("data", segunda).lte("data", somarDias(segunda, 6)).order("data")) as Habito[];
 }
