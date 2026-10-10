@@ -67,7 +67,7 @@ export function classificarErro(e: unknown): { codigo: CodigoErro; status: numbe
     if (e.status === 529 || e.type === "overloaded_error") {
       return { codigo: "sobrecarga", status: 503, mensagem: "A API do Claude está sobrecarregada. Tente de novo em alguns minutos." };
     }
-    return { codigo: "erro_interno", status: 502, mensagem: `Erro da API do Claude (${e.status ?? "?"}). Tente de novo.` };
+    return { codigo: "erro_interno", status: 502, mensagem: `Erro da API do Claude (${e.status ?? "?"}): ${e.message}`.slice(0, 400) };
   }
   return { codigo: "erro_interno", status: 500, mensagem: "Erro inesperado. Tente de novo." };
 }
