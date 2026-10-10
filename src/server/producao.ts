@@ -1,6 +1,7 @@
 import "server-only";
 import { processarArquivo } from "./biblioteca/processar";
-import { BETAS_FALLBACK, clienteIA, MODELO } from "./ia/cliente";
+import { clienteIA, iaConfigurada } from "./ia/cliente";
+import type { PortaIA } from "./ia/tipos";
 import { prompt } from "./prompts";
 import { repoSupabase } from "./repo";
 import { criarRotas } from "./rotas";
@@ -9,16 +10,25 @@ import { autenticar } from "./supabase";
 /** Rotas com as dependências reais: Supabase do usuário e API do Claude. */
 export const rotas = criarRotas({
   autenticar,
-  deps: (ctx) => {
+  repo: (ctx) => repoSupabase(ctx.sb),
+  ia: (): PortaIA => {
     const cliente = clienteIA();
     return {
-      // Streaming evita timeout em respostas longas; o SDK junta a mensagem final.
-      ia: { chamar: (params) => cliente.beta.messages.stream(params).finalMessage() },
-      repo: repoSupabase(ctx.sb),
-      prompts: prompt,
-      modelo: MODELO,
-      betas: BETAS_FALLBACK,
+      // Streaming em todas as chamadas: evita timeout em respostas longas e mede o progresso.
+      chamar: (params, opcoes) => {
+        const stream = cliente.beta.messages.stream(params);
+        if (opcoes?.aoTexto) {
+          let total = 0;
+          stream.on("text", (delta) => {
+            total += delta.length;
+            opcoes.aoTexto!(total);
+          });
+        }
+        return stream.finalMessage();
+      },
     };
   },
+  iaConfigurada,
+  prompts: prompt,
   processar: processarArquivo,
 });

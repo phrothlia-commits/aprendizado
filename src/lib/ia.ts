@@ -18,13 +18,11 @@ export class ErroIA extends Error {
   }
 }
 
-/** POST numa rota do servidor com o token da sessão. Erros chegam com mensagem pronta. */
-export async function api<T>(caminho: string, corpo: unknown): Promise<T> {
+async function postar(caminho: string, corpo: unknown): Promise<Response> {
   const { data } = await supabase().auth.getSession();
   const token = data.session?.access_token;
-  let r: Response;
   try {
-    r = await fetch(caminho, {
+    return await fetch(caminho, {
       method: "POST",
       headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}) },
       body: JSON.stringify(corpo),
@@ -32,27 +30,101 @@ export async function api<T>(caminho: string, corpo: unknown): Promise<T> {
   } catch {
     throw new ErroIA("conexao", "Sem conexão com o servidor. Verifique a internet e tente de novo.");
   }
+}
+
+async function erroDaResposta(r: Response): Promise<ErroIA> {
   const json = await r.json().catch(() => null);
-  if (!r.ok) {
-    if (r.status === 504) throw new ErroIA("tempo", "O servidor demorou demais para responder. Tente de novo em instantes.");
-    throw new ErroIA(json?.erro?.codigo ?? "erro", json?.erro?.mensagem ?? `Erro ${r.status}. Tente de novo.`);
+  if (r.status === 504) return new ErroIA("tempo", "O servidor demorou demais para responder. Tente de novo em instantes.");
+  return new ErroIA(json?.erro?.codigo ?? "erro", json?.erro?.mensagem ?? `Erro ${r.status}. Tente de novo.`);
+}
+
+/** POST numa rota do servidor com o token da sessão. Erros chegam com mensagem pronta. */
+export async function api<T>(caminho: string, corpo: unknown): Promise<T> {
+  const r = await postar(caminho, corpo);
+  if (!r.ok) throw await erroDaResposta(r);
+  return (await r.json()) as T;
+}
+
+export type StatusIA = {
+  configurada: boolean;
+  custo_mes: number;
+  teto_mensal: number;
+  chamadas_hoje: number;
+  limite_diario: number;
+  alerta: "perto_do_teto" | "bloqueado" | null;
+};
+
+/** Se a chave existe no servidor (sem revelar o valor) e como está o gasto do mês. */
+export async function statusIA(): Promise<StatusIA | null> {
+  try {
+    return await api<StatusIA>("/api/ia/status", {});
+  } catch {
+    return null;
   }
-  return json as T;
 }
 
 export async function iaConfigurada(): Promise<boolean> {
-  try {
-    const r = await fetch("/api/ia/status", { cache: "no-store" });
-    return Boolean((await r.json()).configurada);
-  } catch {
-    return false;
-  }
+  return Boolean((await statusIA())?.configurada);
 }
 
 // --- Aulas ------------------------------------------------------------------
 
-export async function gerarAula(trimestreId: string, passo: "nucleo" | "paralela") {
-  return api<{ id: string }>("/api/ia/aula", { trimestre_id: trimestreId, passo });
+export type ProgressoAula = { etapa: "pendente" | "pesquisa" | "verificacao" | "composicao" | "conferencia"; reaproveitado?: boolean; caracteres?: number };
+
+const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Acompanha uma geração que roda em outra aba/requisição (sem chamar a IA). */
+async function aguardarGeracao(geracaoId: string, aoProgresso: (p: ProgressoAula) => void): Promise<{ id: string }> {
+  for (let i = 0; i < 140; i++) {
+    const s = await api<{ status: string; aula_id: string | null; erro: { codigo: string; mensagem: string } | null; em_andamento: boolean }>("/api/ia/aula/status", { geracao_id: geracaoId });
+    if (s.status === "concluida" && s.aula_id) return { id: s.aula_id };
+    if (s.status === "erro" && !s.em_andamento) throw new ErroIA(s.erro?.codigo ?? "erro", s.erro?.mensagem ?? "A geração falhou. Tente de novo.");
+    if (!s.em_andamento && s.status !== "erro") throw new ErroIA("interrompida", "A geração foi interrompida. Toque em Tentar de novo: o que já foi feito é aproveitado.");
+    if (s.status !== "erro") aoProgresso({ etapa: s.status as ProgressoAula["etapa"] });
+    await espera(3000);
+  }
+  throw new ErroIA("tempo", "A geração está demorando mais que o normal. Volte em alguns minutos.");
+}
+
+/**
+ * Gera a aula lendo o progresso em tempo real (NDJSON). `geracaoId` é o id de
+ * idempotência: o mesmo clique, recarga ou outra aba não dispara uma segunda geração.
+ */
+export async function gerarAula(
+  p: { trimestreId: string; passo: "nucleo" | "paralela"; geracaoId: string; novasFontes?: boolean },
+  aoProgresso: (p: ProgressoAula) => void = () => {},
+): Promise<{ id: string }> {
+  const r = await postar("/api/ia/aula", { geracao_id: p.geracaoId, trimestre_id: p.trimestreId, passo: p.passo, novas_fontes: p.novasFontes || undefined });
+  if (!r.ok || !r.body) throw await erroDaResposta(r);
+  const leitor = r.body.pipeThrough(new TextDecoderStream()).getReader();
+  let resto = "";
+  try {
+    for (;;) {
+      const { value, done } = await leitor.read();
+      if (done) break;
+      resto += value;
+      const linhas = resto.split("\n");
+      resto = linhas.pop() ?? "";
+      for (const l of linhas) {
+        if (!l.trim()) continue;
+        const ev = JSON.parse(l) as { etapa?: string; reaproveitado?: boolean; caracteres?: number; id?: string; geracao_id?: string; erro?: { codigo: string; mensagem: string } };
+        if (ev.erro) {
+          if (ev.erro.codigo === "em_andamento") return aguardarGeracao(ev.geracao_id ?? p.geracaoId, aoProgresso);
+          throw new ErroIA(ev.erro.codigo, ev.erro.mensagem);
+        }
+        if (ev.etapa === "pronto" && ev.id) return { id: ev.id };
+        aoProgresso(ev as ProgressoAula);
+      }
+    }
+  } catch (e) {
+    if (e instanceof ErroIA) throw e;
+    // conexão caiu no meio: a geração continua no servidor; acompanha pelo status
+  }
+  return aguardarGeracao(p.geracaoId, aoProgresso);
+}
+
+export async function explicarDeOutroJeito(aulaId: string, bloco: number) {
+  return api<{ explicacao: string; analogia: string; reaproveitada: boolean }>("/api/ia/explicar", { aula_id: aulaId, bloco });
 }
 
 export async function carregarAula(id: string): Promise<Aula | null> {
@@ -196,6 +268,32 @@ export async function adicionarObraAberta(dados: { url: string; titulo: string; 
 }
 
 // --- Resumo de uso da IA -------------------------------------------------------------
+
+export type PainelIA = {
+  custo_mes: number;
+  aulas_mes: number;
+  custo_aulas_mes: number;
+  geracoes_mes: number;
+  geracoes_ok_mes: number;
+  cache_tokens_mes: number;
+  economia_cache_usd: number;
+  economia_reuso_usd: number;
+  reaproveitamentos_mes: number;
+};
+
+/** Painel do mês (migração 0003) e os últimos erros com o detalhe técnico. Null antes da migração. */
+export async function painelIA(): Promise<{ painel: PainelIA; erros: { created_at: string; etapa: string | null; erro: string | null; erro_detalhe: { status: number | null; mensagem: string; request_id: string | null; modelo: string | null } | null }[] } | null> {
+  const sb = supabase();
+  const fuso = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const [p, e] = await Promise.all([
+    sb.rpc("painel_ia", { fuso }),
+    sb.from("ia_chamadas").select("created_at, etapa, erro, erro_detalhe").eq("sucesso", false).order("created_at", { ascending: false }).limit(5),
+  ]);
+  if (p.error || e.error) return null;
+  const linha = (p.data as Record<string, number | string>[])[0] ?? {};
+  const painel = Object.fromEntries(Object.entries(linha).map(([k, v]) => [k, Number(v)])) as PainelIA;
+  return { painel, erros: e.data ?? [] };
+}
 
 export async function resumoIA() {
   const sb = supabase();

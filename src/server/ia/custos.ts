@@ -45,3 +45,10 @@ export function calcularCusto(modelo: string, uso: UsoChamada | null | undefined
     u.buscas_web * CUSTO_POR_BUSCA;
   return Math.round(custo * 10000) / 10000;
 }
+
+/** Quanto o cache economizou: tokens lidos do cache pagariam o preço cheio de entrada. */
+export function economiaCache(modelo: string, uso: UsoChamada | null | undefined): number {
+  const p = PRECOS[modelo] ?? PRECOS["claude-opus-5-5"];
+  const lidos = uso?.cache_read_input_tokens ?? 0;
+  return Math.round(((lidos * (p.entrada - p.cacheLeitura)) / 1_000_000) * 10000) / 10000;
+}

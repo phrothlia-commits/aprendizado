@@ -14,6 +14,7 @@ Especificação completa: documento "Plataforma de Trilha de Estudos — Especif
 2. Cole todo o conteúdo de [`supabase/migrations/0001_schema.sql`](supabase/migrations/0001_schema.sql) e clique em **Run**.
    Ele cria as 14 tabelas, liga o RLS em todas e cria as funções `semear`, `dias_ativos` e `tags_cartoes`. Pode rodar de novo sem perder dados.
    Depois, numa nova query, rode [`supabase/migrations/0002_ia.sql`](supabase/migrations/0002_ia.sql): tabelas da camada de IA (aulas, fontes, Tutor Feynman, registro de custos, biblioteca) e o bucket privado `biblioteca` no Storage, com RLS por pasta do usuário.
+   Por fim, rode [`supabase/migrations/0003_ia_otimizacao.sql`](supabase/migrations/0003_ia_otimizacao.sql): modelo por etapa, teto mensal, número de buscas e nível em `configuracoes`; tabelas `geracoes` (checkpoints e idempotência), `fontes_tema` (cache de fontes) e `ia_dominios_bloqueados`; colunas novas em `ia_chamadas` (etapa, duração, detalhe do erro, reaproveitamento, economia) e a função `painel_ia`. As três migrações são idempotentes.
 3. Em **Authentication → URL Configuration**, coloque a URL do deploy em *Site URL* (por exemplo `https://trilha.vercel.app`). Assim o link de confirmação do e-mail aponta para o app.
 
 ### 2. Rodar localmente
@@ -32,9 +33,21 @@ npm run dev                  # http://localhost:3000
 
 ### 4. Deploy na Vercel
 
+**Situação atual:** o app está no ar (branch `main` na Vercel), com `ANTHROPIC_API_KEY` cadastrada em Production e Preview e as migrações 0001 e 0002 aplicadas. A partir de agora, toda mudança entra por branch e pull request, nunca direto na `main`: cada PR ganha um link de preview da Vercel para testar antes do merge.
+
+Para quem for montar do zero:
+
 1. Importe o repositório na Vercel (o framework Next.js é detectado sozinho).
 2. Em *Environment Variables*, cadastre `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` e `ANTHROPIC_API_KEY` (esta última **sem** o prefixo `NEXT_PUBLIC_`: ela só existe no servidor e nunca vai para o navegador).
 3. Faça o deploy e, no celular, abra a URL e use **Adicionar à tela inicial** para instalar o PWA.
+4. Confira de novo que **Allow new users to sign up** está desligado no Supabase (*Authentication → Sign In / Providers*). Com o cadastro aberto, qualquer pessoa com o link criaria conta e poderia gastar a sua chave da API dentro dos limites da conta dela.
+
+### 5. Domínios fora da busca na web
+
+Alguns domínios da lista legal não são acessíveis ao rastreador da Anthropic, e a API recusa a busca inteira (erro 400) se um deles estiver em `allowed_domains`. Eles continuam valendo para classificar links que chegam por outro caminho, mas não entram na busca:
+
+- **Lista fixa** (`FORA_DA_BUSCA` em `src/server/fontes/dominios.ts`): `bbc.co.uk`.
+- **Lista automática** (tabela `ia_dominios_bloqueados`): quando a API recusa um domínio, o servidor registra o domínio (com data e contagem), tenta a busca de novo **uma** vez sem ele e o exclui das buscas seguintes. Para devolver um domínio à busca, apague a linha dele na tabela.
 
 ## Comandos
 
@@ -56,8 +69,8 @@ src/lib/hoje.ts             Regras da tela Hoje: rotina, modo mínimo, sabedoria
 src/lib/seed.ts             Monta a carga inicial a partir de /seeds
 src/lib/db.ts, src/lib/ia.ts Acesso ao Supabase e às rotas de IA a partir do navegador
 src/app/                    Telas (abas Hoje, Trilha, Biblioteca, Você; fluxos de aula, revisão e Feynman)
-src/app/api/                Rotas do servidor: aula, Feynman, busca de PDF legal, biblioteca
-src/server/ia/              Pipeline de IA: busca, composição, custos, erros, schemas (só servidor)
+src/app/api/                Rotas do servidor: aula (com progresso), status, explicar, Feynman, busca de PDF legal, biblioteca
+src/server/ia/              Pipeline de IA: modelos, chamadas, busca, conferência, perfil, custos, erros, schemas (só servidor)
 src/server/fontes/          Lista de fontes legais e verificação de links
 src/server/biblioteca/      Extração de PDF/EPUB/TXT/HTML/Kindle e download de obras abertas
 prompts/                    Prompts de sistema, em português
@@ -65,13 +78,42 @@ prompts/                    Prompts de sistema, em português
 
 ## Camada de IA
 
-Todas as chamadas à API do Claude acontecem no servidor, com `ANTHROPIC_API_KEY`. Modelo: Claude Opus 5.5, com o fallback do servidor ligado (se o modelo recusar por política, a própria API tenta um modelo alternativo).
+Todas as chamadas à API do Claude acontecem no servidor, com `ANTHROPIC_API_KEY` (nunca em `NEXT_PUBLIC_*`, nunca no navegador nem nos logs). Os ids de modelo ficam num só arquivo, `src/server/ia/modelos.ts`.
 
-- **Aula guiada:** botão "Começar aula" no passo Aprender. São duas chamadas: (1) busca na web restrita aos domínios legais de `src/server/fontes/dominios.ts`; (2) composição da aula em JSON validado por schema. A IA só cita fontes por identificador (S1, S2…, ou T1, T2… para trechos da sua biblioteca); os links vêm exclusivamente dos resultados da busca e cada um é verificado no servidor antes de aparecer. Link quebrado é descartado.
-- **Fontes legais:** domínio público, acesso aberto, documentos oficiais e cursos gratuitos oficiais; para livros protegidos, só prévia, empréstimo, assinatura ou compra. Padrões de cópia pirata e arquivos de obras protegidas são descartados.
-- **Busca de PDF legal:** restrita aos 16 domínios marcados para download (domínio público, acesso aberto, fontes oficiais). O botão "Adicionar à biblioteca" baixa só desses domínios, verificando cada redirecionamento.
-- **Biblioteca:** arquivos no Storage privado; o texto é dividido em trechos com capítulo e página e indexado com busca full-text. A aula e o Tutor Feynman usam os trechos relevantes e citam capítulo e página.
-- **Custos:** cada chamada é registrada (tokens, buscas, custo estimado). Gasto do mês e limite diário em Você › Configurações. Uma aula usa 2 chamadas; Feynman e busca de PDF, 1.
+**Modelo por etapa** (Você › Configurações):
+
+| Etapa | Padrão | Opções |
+|---|---|---|
+| Pesquisa de fontes (busca na web) | Claude Sonnet 5.5 | Opus 5.5 |
+| Composição da aula | Claude Sonnet 5.5 | Opus 5.5 (mais profundidade, cerca do dobro do custo) |
+| Tutor Feynman | Claude Sonnet 5.5 | Opus 5.5, Haiku 5.5 |
+| Explicar de outro jeito | Claude Haiku 5.5 | Sonnet 5.5 |
+| Reparo do formato (JSON) | Claude Haiku 5.5 | Sonnet 5.5 |
+
+Sonnet e Opus usam o fallback do servidor (`fallbacks: "default"`): se o modelo recusar por política, a própria API tenta outro. O Haiku 5.5 não tem esse recurso.
+
+**Como uma aula é gerada**
+
+1. **Biblioteca primeiro:** busca full-text nos seus trechos. Havendo trechos da obra-base do tema, eles viram a fonte principal e a busca na web cai para no máximo 2 usos.
+2. **Fontes:** se o tema tem fontes guardadas há menos de 30 dias, cada link é reverificado por HTTP (sem IA) e, com 3 ou mais válidos, a busca na web é pulada. Senão, busca restrita aos domínios legais, com no máximo 3 usos (configurável) e `allowed_domains` sempre presente. "Buscar novas fontes" (ao tentar de novo) ignora o cache.
+3. **Composição:** saída estruturada (`output_config.format`) validada com zod no servidor. A parte fixa do prompt (metodologia, regras de fontes, formato e o perfil do aluno) vem primeiro e é marcada para cache; o pedido do dia vai no fim. O perfil (até ~300 palavras, montado sem IA) traz nível declarado, aulas concluídas do tema, cartões que você mais erra, lacunas do Feynman e perguntas do pré-teste que você marcou como erradas. O pedido inclui as 2 últimas aulas e o que vem depois na trilha.
+4. **Conferência automática (sem IA):** objetivo, pré-teste, cada bloco com citação e pergunta de recuperação, citações apontando para fontes verificadas, 3 a 8 cartões com pelo menos um "por quê?" e nenhum link fora da lista. O que dá para corrigir sem IA é corrigido; o resto vai em **uma** chamada de correção só com os itens que falharam (mesmo modelo e mesma parte fixa, que sai do cache).
+5. **Cartões:** um conceito por cartão; os que repetem cartões que você já tem (similaridade de texto no servidor) são retirados.
+
+**Robustez e custo**
+
+- **Erros:** mensagem em português nomeando a etapa (pesquisa, verificação de links, composição, conferência, Feynman, biblioteca). O detalhe técnico (status, tipo, mensagem, request_id, modelo, etapa) vai para o log do servidor e para `ia_chamadas.erro_detalhe`; os últimos erros aparecem em Você › Configurações.
+- **JSON fora do formato:** no máximo **uma** chamada de reparo (Haiku), enviando só os erros de validação e o JSON recebido.
+- **Checkpoints:** cada etapa paga fica guardada em `geracoes`. "Tentar de novo" retoma da etapa que falhou.
+- **Idempotência:** cada geração tem um id; duplo clique, recarga ou duas abas não disparam uma segunda geração (a outra aba acompanha o progresso pelo status).
+- **Progresso real:** a tela mostra "Pesquisando fontes", "Verificando links", "Escrevendo a aula" e "Conferindo", transmitidos pelo servidor; todas as chamadas usam streaming.
+- **Reabrir aula** nunca chama a API; "Explicar de outro jeito" fica guardado na aula depois da primeira vez.
+- **Limites:** limite diário de chamadas e teto mensal em dólares (padrão US$ 15), conferidos **antes** de cada chamada, inclusive reparo, correção, Feynman, Explicar e busca de PDF. Aviso a partir de 80%; bloqueio em 100% até você aumentar o teto.
+- **Medição:** cada chamada registra etapa, modelo, tokens de entrada e saída, tokens lidos do cache, buscas, custo, duração, sucesso/erro e se foi reaproveitamento. Você › Configurações mostra gasto do mês, custo médio por aula, taxa de sucesso das gerações e economia (cache de prompt e reaproveitamentos).
+
+- **Fontes legais:** domínio público, acesso aberto, documentos oficiais e cursos gratuitos oficiais; para livros protegidos, só prévia, empréstimo, assinatura ou compra. Padrões de cópia pirata e arquivos de obras protegidas são descartados. A IA só cita fontes por identificador (S1, T1…); os links vêm dos resultados da busca e cada um é verificado no servidor.
+- **Busca de PDF legal:** restrita aos domínios marcados para download (domínio público, acesso aberto, fontes oficiais). O botão "Adicionar à biblioteca" baixa só desses domínios, verificando cada redirecionamento.
+- **Biblioteca:** arquivos no Storage privado; o texto é dividido em trechos com capítulo e página e indexado com busca full-text.
 
 Decisões de modelagem que vale conhecer:
 
