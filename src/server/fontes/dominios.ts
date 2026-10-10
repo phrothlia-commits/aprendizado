@@ -82,8 +82,14 @@ export const REGRAS: RegraDominio[] = [
   { dominio: "amazon.com", categoria: "protegido_legal", tipo: "texto", gratuita: false, acesso: "compra ou Kindle Unlimited", permiteDownload: false },
 ];
 
+/**
+ * Domínios que o rastreador da Anthropic não acessa: a API recusa a busca inteira (erro 400)
+ * se algum deles estiver em `allowed_domains`. Continuam valendo para classificar links.
+ */
+const FORA_DA_BUSCA = new Set(["bbc.co.uk"]);
+
 /** Domínios para `allowed_domains` da busca (subdomínios incluídos). Limite da API: 64. */
-export const DOMINIOS_BUSCA: string[] = [...new Set(REGRAS.map((r) => r.dominio))];
+export const DOMINIOS_BUSCA: string[] = [...new Set(REGRAS.map((r) => r.dominio))].filter((d) => !FORA_DA_BUSCA.has(d));
 
 /** Indícios de cópia não autorizada ou download direto que nunca exibimos para obras protegidas. */
 const PADROES_PROIBIDOS = [/torrent/i, /baixar[-_ ]?gr[aá]tis/i, /download[-_ ]?free/i, /pdf[-_ ]?gr[aá]tis/i, /libgen/i, /z-?lib/i];
