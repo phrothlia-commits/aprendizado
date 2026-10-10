@@ -7,6 +7,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { carregarBase, semearSeNecessario } from "@/lib/db";
 import { supabase } from "@/lib/supabase";
 import type { Configuracoes, Pilar, Tema } from "@/lib/tipos";
+import { IconeBiblioteca, IconeHoje, IconeTrilha, IconeVoce } from "./icones";
 import { Login } from "./Login";
 
 type Contexto = {
@@ -15,6 +16,8 @@ type Contexto = {
   config: Configuracoes;
   recarregar: () => Promise<void>;
   email: string | null;
+  nome: string | null;
+  userId: string;
 };
 
 const FALTA_CONFIG = !process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -27,18 +30,24 @@ export function useApp(): Contexto {
   return c;
 }
 
-const NAV = [
-  { href: "/", rotulo: "Hoje", icone: "☀" },
-  { href: "/revisar", rotulo: "Revisar", icone: "↻" },
-  { href: "/trilha", rotulo: "Trilha", icone: "◎" },
-  { href: "/cartoes", rotulo: "Cartões", icone: "▤" },
-  { href: "/diario", rotulo: "Diário", icone: "✎" },
-  { href: "/mais", rotulo: "Mais", icone: "⋯" },
+/** Quatro abas. Cada rota pertence a uma aba (para marcar a ativa). */
+const ABAS = [
+  { href: "/", rotulo: "Hoje", Icone: IconeHoje, rotas: ["/", "/revisar", "/diario"] },
+  { href: "/trilha", rotulo: "Trilha", Icone: IconeTrilha, rotas: ["/trilha", "/feynman"] },
+  { href: "/biblioteca", rotulo: "Biblioteca", Icone: IconeBiblioteca, rotas: ["/biblioteca"] },
+  { href: "/voce", rotulo: "Você", Icone: IconeVoce, rotas: ["/voce", "/cartoes", "/habitos"] },
 ];
+
+/** Telas em fluxo ocupam a tela inteira, sem as abas (uma ação principal por vez). */
+const FLUXOS = ["/aula", "/revisar", "/feynman"];
+
+function abaAtiva(caminho: string) {
+  return ABAS.find((a) => a.rotas.some((r) => (r === "/" ? caminho === "/" || caminho.startsWith("/diario") : caminho.startsWith(r))))?.href;
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [sessao, setSessao] = useState<Session | null | undefined>(undefined);
-  const [base, setBase] = useState<Omit<Contexto, "recarregar" | "email"> | null>(null);
+  const [base, setBase] = useState<Pick<Contexto, "pilares" | "temas" | "config"> | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const caminho = usePathname();
 
@@ -76,11 +85,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (erro) {
     return (
       <main className="mx-auto max-w-lg p-6">
-        <div className="cartao-ui border-perigo">
+        <div className="cartao-ui">
           <p className="font-semibold text-perigo">Erro ao carregar</p>
           <p className="mt-2 text-sm text-texto-2">{erro}</p>
           <p className="mt-2 text-sm text-texto-2">
-            Se a mensagem fala de função ou tabela inexistente, rode o arquivo <code>supabase/migrations/0001_schema.sql</code> no SQL Editor do Supabase.
+            Se a mensagem fala de função ou tabela inexistente, rode os arquivos de <code>supabase/migrations</code> no SQL Editor do Supabase.
           </p>
           <button className="botao-secundario mt-4" onClick={() => location.reload()}>
             Tentar de novo
@@ -93,33 +102,48 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (sessao === null) return <Login />;
   if (!base) return <Carregando texto="Preparando sua trilha…" />;
 
+  const emFluxo = FLUXOS.some((f) => caminho.startsWith(f));
+  const ativa = abaAtiva(caminho);
+  const nome = (sessao.user.user_metadata?.nome as string | undefined)?.trim() || null;
+
   return (
-    <AppCtx.Provider value={{ ...base, recarregar, email: sessao.user.email ?? null }}>
-      <div className="mx-auto flex min-h-dvh max-w-3xl flex-col md:flex-row md:max-w-5xl">
-        <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-borda bg-superficie/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:static md:w-48 md:shrink-0 md:border-r md:border-t-0 md:bg-transparent md:pt-6">
-          <ul className="flex justify-around md:flex-col md:gap-1 md:px-3">
-            {NAV.map((n) => {
-              const ativo = n.href === "/" ? caminho === "/" : caminho.startsWith(n.href);
-              return (
-                <li key={n.href}>
-                  <Link
-                    href={n.href}
-                    className={`flex flex-col items-center gap-0.5 px-2 py-2 text-[11px] md:flex-row md:gap-3 md:rounded-lg md:px-3 md:text-sm ${
-                      ativo ? "text-destaque md:bg-superficie-2 font-semibold" : "text-texto-2"
-                    }`}
-                  >
-                    <span className="text-lg leading-none" aria-hidden>
-                      {n.icone}
-                    </span>
-                    {n.rotulo}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-        <main className="flex-1 px-4 pb-28 pt-6 md:px-8 md:pb-10">{children}</main>
-      </div>
+    <AppCtx.Provider value={{ ...base, recarregar, email: sessao.user.email ?? null, nome, userId: sessao.user.id }}>
+      {emFluxo ? (
+        <div className="mx-auto flex min-h-dvh max-w-2xl flex-col">{children}</div>
+      ) : (
+        <div className="flex min-h-dvh">
+          <nav aria-label="Navegação principal" className="hidden w-[240px] flex-none flex-col gap-1 border-r border-borda bg-superficie px-4 py-7 md:flex">
+            <div className="px-3 pb-6 font-serif text-[26px] font-medium tracking-[-0.01em]">Trilha</div>
+            {ABAS.map(({ href, rotulo, Icone }) => (
+              <Link
+                key={href}
+                href={href}
+                aria-current={ativa === href ? "page" : undefined}
+                className={`flex h-11 items-center gap-3 rounded-[10px] px-3 text-[15px] ${ativa === href ? "bg-superficie-2 font-semibold" : "font-medium text-texto-2"}`}
+              >
+                <Icone tamanho={20} />
+                {rotulo}
+              </Link>
+            ))}
+          </nav>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <main className="mx-auto w-full max-w-[1000px] flex-1 px-5 pt-[max(18px,env(safe-area-inset-top))] pb-28 md:px-10 md:pt-12 md:pb-12">{children}</main>
+            <nav aria-label="Navegação principal" className="fixed inset-x-0 bottom-0 z-20 flex border-t border-borda bg-superficie px-2 pt-1.5 pb-[max(24px,env(safe-area-inset-bottom))] md:hidden">
+              {ABAS.map(({ href, rotulo, Icone }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  aria-current={ativa === href ? "page" : undefined}
+                  className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-[3px] text-[11px] ${ativa === href ? "font-semibold text-texto" : "font-medium text-texto-2"}`}
+                >
+                  <Icone tamanho={22} espessura={1.7} />
+                  <span>{rotulo}</span>
+                </Link>
+              ))}
+            </nav>
+          </div>
+        </div>
+      )}
     </AppCtx.Provider>
   );
 }
